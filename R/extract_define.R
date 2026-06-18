@@ -56,6 +56,7 @@ rg_extract_define <- function(define_xml, study_id = NULL, data_class = c("auto"
   dataset_nodes <- xml2::xml_find_all(doc, rg_xpath_anywhere("ItemGroupDef"))
   dataset_rows <- vector("list", length(dataset_nodes))
   variable_rows <- list()
+  item_context <- list()
   evidence_rows <- list()
 
   for (i in seq_along(dataset_nodes)) {
@@ -116,13 +117,20 @@ rg_extract_define <- function(define_xml, study_id = NULL, data_class = c("auto"
           NA_character_
         }
         variable_evidence_id <- rg_make_evidence_id("DEFVAR", source_define, paste(dataset_oid, item_oid, sep = "/"), j)
+        variable_name <- if (!inherits(item, "xml_missing")) rg_xml_attr_any(item, "Name") else NA_character_
+        item_context[[item_oid]] <- list(
+          dataset_oid = dataset_oid,
+          dataset_name = dataset_name,
+          variable_oid = item_oid,
+          variable_name = variable_name
+        )
         variable_rows[[length(variable_rows) + 1]] <- tibble::tibble(
           study_id = study_id %||% NA_character_,
           data_class = data_class,
           dataset_oid = dataset_oid,
           dataset_name = dataset_name,
           variable_oid = item_oid,
-          variable_name = if (!inherits(item, "xml_missing")) rg_xml_attr_any(item, "Name") else NA_character_,
+          variable_name = variable_name,
           variable_label = if (!inherits(item, "xml_missing")) rg_xml_attr_any(item, "Label") else NA_character_,
           variable_type = if (!inherits(item, "xml_missing")) rg_xml_attr_any(item, "DataType") else NA_character_,
           length = if (!inherits(item, "xml_missing")) rg_xml_attr_any(item, "Length") else NA_character_,
@@ -230,28 +238,118 @@ rg_extract_define <- function(define_xml, study_id = NULL, data_class = c("auto"
     )
   }
 
-  unsupported_define_nodes <- c(
-    as.list(xml2::xml_find_all(doc, rg_xpath_anywhere("ValueListDef"))),
-    as.list(xml2::xml_find_all(doc, rg_xpath_anywhere("WhereClauseDef")))
-  )
-  for (i in seq_along(unsupported_define_nodes)) {
-    node <- unsupported_define_nodes[[i]]
-    node_name <- xml2::xml_name(node)
-    oid <- rg_xml_attr_any(node, "OID")
-    locator <- paste0(node_name, "[", oid %||% paste0("index=", i), "]")
-    evidence_id <- rg_make_evidence_id("DEFUNS", source_define, locator, i)
-    evidence_rows[[length(evidence_rows) + 1]] <- rg_new_evidence(
-      evidence_id = evidence_id,
-      study_id = study_id,
-      source_file = source_define,
-      source_type = "define",
-      data_class = data_class,
-      locator = locator,
-      extracted_value = paste(node_name, "is present but is not expanded by the MVP define.xml parser."),
-      extraction_method = "parser",
-      confidence = 0.8,
-      needs_human_review = TRUE
-    )
+  valuelevel_rows <- list()
+  value_list_nodes <- xml2::xml_find_all(doc, rg_xpath_anywhere("ValueListDef"))
+  for (i in seq_along(value_list_nodes)) {
+    node <- value_list_nodes[[i]]
+    value_list_oid <- rg_xml_attr_any(node, "OID")
+    refs <- xml2::xml_find_all(node, rg_xpath_child("ItemRef"))
+    if (length(refs) == 0) {
+      refs <- list(xml2::xml_missing())
+    }
+    for (j in seq_along(refs)) {
+      ref <- refs[[j]]
+      item_oid <- if (inherits(ref, "xml_missing")) NA_character_ else rg_xml_attr_any(ref, "ItemOID")
+      where_ref <- if (inherits(ref, "xml_missing")) {
+        NA_character_
+      } else {
+        rg_xml_attr_any(xml2::xml_find_first(ref, rg_xpath_anywhere("WhereClauseRef")), "WhereClauseOID", NA_character_)
+      }
+      context <- if (!is.na(item_oid) && item_oid %in% names(item_context)) item_context[[item_oid]] else list()
+      item <- if (!is.na(item_oid) && item_oid %in% names(item_defs)) item_defs[[item_oid]] else NULL
+      variable_name <- context$variable_name %||% if (!is.null(item) && !inherits(item, "xml_missing")) rg_xml_attr_any(item, "Name") else NA_character_
+      locator <- paste0("ValueListDef[", value_list_oid, "]/ItemRef[", item_oid, "]")
+      evidence_id <- rg_make_evidence_id("DEFVL", source_define, locator, j)
+      valuelevel_rows[[length(valuelevel_rows) + 1]] <- tibble::tibble(
+        study_id = study_id %||% NA_character_,
+        data_class = data_class,
+        value_list_oid = value_list_oid,
+        where_clause_oid = where_ref,
+        dataset_oid = context$dataset_oid %||% NA_character_,
+        dataset_name = context$dataset_name %||% NA_character_,
+        variable_oid = item_oid,
+        variable_name = variable_name,
+        mandatory = if (inherits(ref, "xml_missing")) NA_character_ else rg_xml_attr_any(ref, "Mandatory"),
+        method_oid = if (inherits(ref, "xml_missing")) NA_character_ else rg_xml_attr_any(ref, "MethodOID"),
+        where_item_oid = NA_character_,
+        where_variable_name = NA_character_,
+        comparator = NA_character_,
+        check_value = NA_character_,
+        soft_hard = NA_character_,
+        source_define = source_define,
+        evidence_id = evidence_id,
+        needs_human_review = FALSE
+      )
+      evidence_rows[[length(evidence_rows) + 1]] <- rg_new_evidence(
+        evidence_id = evidence_id,
+        study_id = study_id,
+        source_file = source_define,
+        source_type = "define",
+        data_class = data_class,
+        locator = locator,
+        extracted_value = paste(stats::na.omit(c(value_list_oid, variable_name)), collapse = " - "),
+        extraction_method = "parser",
+        confidence = 0.8
+      )
+    }
+  }
+
+  where_clause_nodes <- xml2::xml_find_all(doc, rg_xpath_anywhere("WhereClauseDef"))
+  for (i in seq_along(where_clause_nodes)) {
+    node <- where_clause_nodes[[i]]
+    where_clause_oid <- rg_xml_attr_any(node, "OID")
+    range_checks <- xml2::xml_find_all(node, rg_xpath_child("RangeCheck"))
+    if (length(range_checks) == 0) {
+      range_checks <- list(xml2::xml_missing())
+    }
+    for (j in seq_along(range_checks)) {
+      range_check <- range_checks[[j]]
+      item_oid <- if (inherits(range_check, "xml_missing")) NA_character_ else rg_xml_attr_any(range_check, "ItemOID")
+      context <- if (!is.na(item_oid) && item_oid %in% names(item_context)) item_context[[item_oid]] else list()
+      item <- if (!is.na(item_oid) && item_oid %in% names(item_defs)) item_defs[[item_oid]] else NULL
+      variable_name <- context$variable_name %||% if (!is.null(item) && !inherits(item, "xml_missing")) rg_xml_attr_any(item, "Name") else NA_character_
+      check_value <- if (inherits(range_check, "xml_missing")) {
+        NA_character_
+      } else {
+        paste(xml2::xml_text(xml2::xml_find_all(range_check, rg_xpath_child("CheckValue"))), collapse = "; ")
+      }
+      if (!nzchar(check_value)) {
+        check_value <- NA_character_
+      }
+      locator <- paste0("WhereClauseDef[", where_clause_oid, "]/RangeCheck[", item_oid, "]")
+      evidence_id <- rg_make_evidence_id("DEFWC", source_define, locator, j)
+      valuelevel_rows[[length(valuelevel_rows) + 1]] <- tibble::tibble(
+        study_id = study_id %||% NA_character_,
+        data_class = data_class,
+        value_list_oid = NA_character_,
+        where_clause_oid = where_clause_oid,
+        dataset_oid = context$dataset_oid %||% NA_character_,
+        dataset_name = context$dataset_name %||% NA_character_,
+        variable_oid = NA_character_,
+        variable_name = NA_character_,
+        mandatory = NA_character_,
+        method_oid = NA_character_,
+        where_item_oid = item_oid,
+        where_variable_name = variable_name,
+        comparator = if (inherits(range_check, "xml_missing")) NA_character_ else rg_xml_attr_any(range_check, "Comparator"),
+        check_value = check_value,
+        soft_hard = if (inherits(range_check, "xml_missing")) NA_character_ else rg_xml_attr_any(range_check, "SoftHard"),
+        source_define = source_define,
+        evidence_id = evidence_id,
+        needs_human_review = FALSE
+      )
+      evidence_rows[[length(evidence_rows) + 1]] <- rg_new_evidence(
+        evidence_id = evidence_id,
+        study_id = study_id,
+        source_file = source_define,
+        source_type = "define",
+        data_class = data_class,
+        locator = locator,
+        extracted_value = paste(stats::na.omit(c(where_clause_oid, variable_name, check_value)), collapse = " - "),
+        extraction_method = "parser",
+        confidence = 0.8
+      )
+    }
   }
 
   list(
@@ -259,6 +357,7 @@ rg_extract_define <- function(define_xml, study_id = NULL, data_class = c("auto"
     define_variables = rg_bind_or_empty(variable_rows, rg_define_variable_columns()),
     define_codelists = rg_bind_or_empty(codelist_rows, rg_define_codelist_columns()),
     define_methods = rg_bind_or_empty(method_rows, rg_define_method_columns()),
+    define_valuelevel = rg_bind_or_empty(valuelevel_rows, rg_define_valuelevel_columns()),
     evidence_table = rg_bind_or_empty(evidence_rows, rg_evidence_columns())
   )
 }

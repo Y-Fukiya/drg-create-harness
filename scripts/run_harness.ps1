@@ -20,6 +20,7 @@ param(
 
   [switch]$Init,
   [switch]$NoRun,
+  [switch]$Interactive,
   [switch]$FailOnQc
 )
 
@@ -48,6 +49,9 @@ if ($Init) {
 }
 if ($NoRun) {
   $runnerArgs += "--no-run"
+}
+if ($Interactive) {
+  $runnerArgs += "--interactive"
 }
 if ($FailOnQc) {
   $runnerArgs += "--fail-on-qc"

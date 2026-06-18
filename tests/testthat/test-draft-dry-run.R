@@ -11,10 +11,11 @@ test_that("rg_draft_guide dry-run works without LLM and writes JSON with evidenc
   expect_equal(draft$guide_type, "adrg")
   expect_true(length(draft$sections) > 0)
   expect_true(all(vapply(draft$sections, function(x) length(x$evidence_ids) > 0, logical(1))))
+  inventory <- draft$sections[[which(vapply(draft$sections, function(x) grepl("dataset_inventory", x$section_id), logical(1)))]]
+  expect_match(inventory$draft_markdown, "Value-level metadata rows", fixed = TRUE)
   unresolved <- draft$sections[[which(vapply(draft$sections, function(x) identical(x$section_id, "unresolved_items"), logical(1)))]]
-  expect_match(unresolved$draft_markdown, "ValueListDef/WhereClauseDef", fixed = TRUE)
-  expect_true(any(grepl("^DEFUNS-", unresolved$evidence_ids)))
-  expect_true(all(grepl("^DEFUNS-", unresolved$evidence_ids)))
+  expect_match(unresolved$draft_markdown, "No unresolved metadata gaps", fixed = TRUE)
+  expect_false(any(grepl("^DEFUNS-", unresolved$evidence_ids)))
 })
 
 test_that("rg_draft_guide auto-extracts only when extracted metadata is missing", {

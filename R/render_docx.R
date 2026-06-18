@@ -45,6 +45,18 @@ rg_render_docx <- function(project_path, guide_type = c("adrg", "csdrg"), templa
     }
   }
 
+  if (nrow(data$define_valuelevel) > 0) {
+    doc <- officer::body_add_par(doc, "Value-Level Metadata", style = "heading 2")
+    valuelevel_tbl <- rg_compact_table(
+      data$define_valuelevel,
+      c(
+        "value_list_oid", "where_clause_oid", "dataset_name", "variable_name",
+        "where_variable_name", "comparator", "check_value", "mandatory"
+      )
+    )
+    doc <- flextable::body_add_flextable(doc, rg_flextable(valuelevel_tbl))
+  }
+
   qc_summary <- rg_read_csv_if_exists(
     fs::path(project_path, "work", "qc", paste0(guide_type, "_qc_summary.csv")),
     rg_qc_summary_columns()

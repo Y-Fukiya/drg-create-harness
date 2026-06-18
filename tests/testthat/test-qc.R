@@ -39,7 +39,7 @@ test_that("rg_qc_summary writes guide-level and combined summaries", {
   expect_true(file.exists(file.path(proj, "work", "qc", "qc_summary.csv")))
 })
 
-test_that("rg_qc warns when unsupported define.xml metadata is detected", {
+test_that("rg_qc reports extracted ValueListDef and WhereClauseDef metadata", {
   proj <- tempfile("rg-project-")
   rg_init_project(proj, study_id = "TEST-001")
   copy_synthetic_sources(proj)
@@ -49,10 +49,10 @@ test_that("rg_qc warns when unsupported define.xml metadata is detected", {
 
   report <- rg_qc(proj, guide_type = "adrg")
 
-  unsupported <- report[report$check_id == "unsupported_define_metadata", ]
-  expect_equal(unsupported$severity, "warning")
-  expect_equal(unsupported$status, "fail")
-  expect_match(unsupported$message, "ValueListDef/WhereClauseDef", fixed = TRUE)
+  valuelevel <- report[report$check_id == "define_valuelevel_metadata", ]
+  expect_equal(valuelevel$severity, "info")
+  expect_equal(valuelevel$status, "pass")
+  expect_match(valuelevel$message, "define_valuelevel.csv", fixed = TRUE)
 })
 
 test_that("rg_qc checks draft and validation dataset names against define_datasets", {

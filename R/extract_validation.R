@@ -228,6 +228,7 @@ rg_extract_metadata <- function(project_path, write = TRUE) {
   define_variables <- rg_bind_or_empty(lapply(define_results, `[[`, "define_variables"), rg_define_variable_columns())
   define_codelists <- rg_bind_or_empty(lapply(define_results, `[[`, "define_codelists"), rg_define_codelist_columns())
   define_methods <- rg_bind_or_empty(lapply(define_results, `[[`, "define_methods"), rg_define_method_columns())
+  define_valuelevel <- rg_bind_or_empty(lapply(define_results, `[[`, "define_valuelevel"), rg_define_valuelevel_columns())
   validation_findings <- rg_bind_or_empty(validation_results, rg_validation_columns())
   evidence_table <- rg_bind_or_empty(
     c(lapply(define_results, `[[`, "evidence_table"), list(rg_validation_evidence(validation_findings))),
@@ -239,6 +240,7 @@ rg_extract_metadata <- function(project_path, write = TRUE) {
     rg_write_csv(define_variables, fs::path(project_path, "work", "extracted", "define_variables.csv"))
     rg_write_csv(define_codelists, fs::path(project_path, "work", "extracted", "define_codelists.csv"))
     rg_write_csv(define_methods, fs::path(project_path, "work", "extracted", "define_methods.csv"))
+    rg_write_csv(define_valuelevel, fs::path(project_path, "work", "extracted", "define_valuelevel.csv"))
     rg_write_csv(validation_findings, fs::path(project_path, "work", "extracted", "validation_findings.csv"))
     rg_write_csv(evidence_table, fs::path(project_path, "work", "evidence", "evidence_table.csv"))
   }
@@ -248,6 +250,7 @@ rg_extract_metadata <- function(project_path, write = TRUE) {
     define_variables = define_variables,
     define_codelists = define_codelists,
     define_methods = define_methods,
+    define_valuelevel = define_valuelevel,
     validation_findings = validation_findings,
     evidence_table = evidence_table
   )

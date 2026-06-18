@@ -43,6 +43,7 @@ usage <- function() {
     "  --init                     Initialize the project if needed.",
     "  --no-run                   Initialize/copy inputs only; skip generation.",
     "  --copy-example NAME        Copy bundled inputs: synthetic, anonymous, or none.",
+    "  --interactive             Prompt for common harness options.",
     "  --summary PATH             Summary JSON path. Default: output/harness_summary.json.",
     "  --fail-on-qc               Exit with status 2 when any QC row fails.",
     "  --help                     Show this help.",
@@ -53,6 +54,30 @@ usage <- function() {
     "  Rscript scripts/run_harness.R --project studies/ABC-001 --guide both",
     sep = "\n"
   ), "\n")
+}
+
+prompt_value <- function(label, default = NULL, choices = NULL) {
+  suffix <- if (!is.null(default) && nzchar(default)) paste0(" [", default, "]") else ""
+  cat(label, suffix, ": ", sep = "")
+  answer <- readLines("stdin", n = 1, warn = FALSE)
+  if (length(answer) == 0 || !nzchar(trimws(answer))) {
+    answer <- default
+  } else {
+    answer <- trimws(answer)
+  }
+  if (!is.null(choices) && !answer %in% choices) {
+    stop(label, " must be one of: ", paste(choices, collapse = ", "), call. = FALSE)
+  }
+  answer
+}
+
+prompt_yes_no <- function(label, default = TRUE) {
+  default_text <- if (isTRUE(default)) "Y/n" else "y/N"
+  answer <- prompt_value(label, default = default_text)
+  if (identical(answer, default_text)) {
+    return(isTRUE(default))
+  }
+  tolower(answer) %in% c("y", "yes", "true", "1")
 }
 
 script_file <- function() {
@@ -179,6 +204,10 @@ run_harness <- function(args = commandArgs(trailingOnly = TRUE)) {
   load_engine(root)
 
   project_path <- arg_value(args, "--project")
+  interactive_mode <- has_flag(args, "--interactive")
+  if (isTRUE(interactive_mode) && (is.null(project_path) || !nzchar(project_path))) {
+    project_path <- prompt_value("Project path", default = "studies/ABC-001")
+  }
   if (is.null(project_path) || !nzchar(project_path)) {
     stop("--project is required.", call. = FALSE)
   }
@@ -186,15 +215,24 @@ run_harness <- function(args = commandArgs(trailingOnly = TRUE)) {
 
   study_id <- arg_value(args, "--study-id", "STUDY-001")
   guide <- arg_value(args, "--guide", "both")
+  copy_example <- arg_value(args, "--copy-example", "none")
+  if (isTRUE(interactive_mode)) {
+    study_id <- prompt_value("Study id", default = study_id)
+    guide <- prompt_value("Guide", default = guide, choices = c("both", "adrg", "csdrg"))
+    copy_example <- prompt_value("Copy bundled example", default = copy_example, choices = c("none", "synthetic", "anonymous"))
+  }
   guides <- guide_types(guide)
   mode <- arg_value(args, "--mode", "dry_run")
   qc_level <- arg_value(args, "--qc-level", "basic")
-  copy_example <- arg_value(args, "--copy-example", "none")
   summary_path <- arg_value(args, "--summary", file.path(project_path, "output", "harness_summary.json"))
   summary_path <- normalize_cli_path(summary_path)
   should_init <- has_flag(args, "--init") || !file.exists(file.path(project_path, "config.yml"))
   no_run <- has_flag(args, "--no-run")
   fail_on_qc <- has_flag(args, "--fail-on-qc")
+  if (isTRUE(interactive_mode)) {
+    no_run <- !prompt_yes_no("Run generation now", default = !no_run)
+    fail_on_qc <- prompt_yes_no("Fail on QC findings", default = fail_on_qc)
+  }
 
   if (!mode %in% c("dry_run", "ellmer")) {
     stop("--mode must be one of: dry_run, ellmer", call. = FALSE)

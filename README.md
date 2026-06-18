@@ -81,6 +81,12 @@ If `make` is not available, use R directly:
 Rscript scripts/run_harness.R --project studies/ABC-001 --study-id ABC-001 --guide both
 ```
 
+For a guided prompt flow:
+
+```bash
+Rscript scripts/run_harness.R --interactive --project studies/ABC-001
+```
+
 ## Quick Start: Windows PowerShell
 
 Clone and enter the repository:
@@ -107,6 +113,12 @@ Copy your `define.xml` and validation CSV/XLSX files into
 
 ```powershell
 .\scripts\run_harness.ps1 -Project .\studies\ABC-001 -Guide both
+```
+
+For the same guided prompt flow on Windows:
+
+```powershell
+.\scripts\run_harness.ps1 -Project .\studies\ABC-001 -Interactive
 ```
 
 ## Quick Start: Windows Command Prompt
@@ -172,6 +184,7 @@ studies/ABC-001/
   work/
     manifest.json
     extracted/
+      define_valuelevel.csv
     evidence/
     qc/
       adrg_qc_report.csv
@@ -221,14 +234,12 @@ findings as flat CSV when those features are needed.
 Sheet selection is intentionally not exposed in the MVP; XLSX imports read the
 first sheet only.
 
-The basic `define.xml` parser detects `ValueListDef` and `WhereClauseDef`
-metadata but does not expand them in the MVP. When those constructs are present,
-QC reports them as `severity = "warning"` and `status = "fail"` so document
-generation can continue while human reviewers still see the gap. The same gap is
-also summarized in the draft guide's unresolved items section, whose
-`evidence_ids` are limited to the unresolved items mentioned in that section
-when gaps are present. If no gap is detected, the section carries source
-metadata evidence supporting that no-gap statement.
+The `define.xml` parser extracts datasets, variables, codelists, methods,
+origin attributes, leaf locations, and a limited ValueListDef/WhereClauseDef
+view into `work/extracted/define_valuelevel.csv`. This value-level support is
+intentionally limited to ItemRef and RangeCheck metadata that can be represented
+as a flat table. More complex define.xml relationships still require human
+review.
 
 QC output includes both row-oriented reports and one-row summaries. The
 guide-specific reports are written as `work/qc/adrg_qc_report.csv` and

@@ -111,21 +111,29 @@ rg_qc <- function(project_path, guide_type = c("adrg", "csdrg"), level = c("basi
     "validation_findings", paste(unknown_validation_datasets, collapse = ", ")
   )
 
-  unsupported_define <- data$evidence_table |>
+  complex_define_evidence <- data$evidence_table |>
     dplyr::filter(grepl("^(ValueListDef|WhereClauseDef)\\[", .data$locator))
+  unsupported_define <- complex_define_evidence |>
+    dplyr::filter(.data$needs_human_review %in% c(TRUE, "TRUE", "true", "1"))
+  has_complex_define <- nrow(complex_define_evidence) > 0
+  extracted_valuelevel_count <- nrow(data$define_valuelevel)
   rows[[length(rows) + 1]] <- rg_qc_row(
-    "unsupported_define_metadata", guide_type,
+    "define_valuelevel_metadata", guide_type,
     if (nrow(unsupported_define) == 0) "info" else "warning",
     if (nrow(unsupported_define) == 0) "pass" else "fail",
-    if (nrow(unsupported_define) == 0) {
-      "No unsupported ValueListDef or WhereClauseDef metadata was detected."
+    if (!has_complex_define) {
+      "No ValueListDef or WhereClauseDef metadata was detected."
+    } else if (nrow(unsupported_define) == 0 && extracted_valuelevel_count > 0) {
+      paste(extracted_valuelevel_count, "ValueListDef/WhereClauseDef rows were extracted into define_valuelevel.csv.")
+    } else if (nrow(unsupported_define) == 0) {
+      "ValueListDef/WhereClauseDef metadata was detected but no extracted rows were available."
     } else {
       paste(
-        "define.xml contains ValueListDef/WhereClauseDef metadata that the MVP parser detects but does not expand:",
+        "define.xml contains ValueListDef/WhereClauseDef metadata requiring human review:",
         paste(unique(unsupported_define$locator), collapse = ", ")
       )
     },
-    "define", paste(unique(unsupported_define$locator), collapse = ", ")
+    "define_valuelevel", paste(unique(complex_define_evidence$locator), collapse = ", ")
   )
 
   if (length(draft_sections) > 0) {

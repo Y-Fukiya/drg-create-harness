@@ -29,6 +29,7 @@ study-project/
   work/
     manifest.json
     extracted/
+      define_valuelevel.csv
     drafts/
     evidence/
     qc/
@@ -126,11 +127,18 @@ Windows Command Prompt:
 scripts\run_harness.cmd --project studies\ABC-001 --study-id ABC-001 --guide both
 ```
 
+Guided prompt flow:
+
+```bash
+Rscript scripts/run_harness.R --interactive --project studies/ABC-001
+```
+
 Useful options:
 
 - `--init`: initialize the project if needed.
 - `--no-run`: initialize/copy inputs and stop before generation.
 - `--copy-example synthetic|anonymous`: populate `source/` from bundled fixtures.
+- `--interactive`: prompt for common project, guide, example, and run options.
 - `--fail-on-qc`: return exit code 2 when any QC row fails.
 - `--summary PATH`: write summary JSON somewhere other than `output/harness_summary.json`.
 
@@ -157,7 +165,8 @@ should fail on any QC issue.
   simple single-sheet workbooks.
 - Multiple-sheet XLSX, merged cells, formula cells, and complex type inference
   are intentionally outside the MVP fallback.
-- `ValueListDef` and `WhereClauseDef` are detected and surfaced as QC review
-  items, but are not expanded into full reviewer-guide text yet.
+- `ValueListDef` and `WhereClauseDef` are expanded into the flat
+  `work/extracted/define_valuelevel.csv` table when ItemRef and RangeCheck
+  metadata are present. More complex relationships still require human review.
 - ellmer, ragnar, iADRG/icSDRG, and GraphRAG remain next-phase integration
   points.
