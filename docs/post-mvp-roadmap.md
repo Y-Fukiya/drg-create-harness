@@ -6,7 +6,7 @@ scope.
 ## Versioning
 
 - Current development version: `0.0.0.9000`.
-- First internal trial release target: `0.1.0`.
+- First public MVP tag target: `0.1.0`.
 - Patch releases should preserve existing public function signatures unless a
   breaking change is explicitly called out.
 

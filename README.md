@@ -11,6 +11,14 @@ generate `work/` artifacts, QC rows, and DOCX drafts.
 Generated documents are evidence-bound drafts. They are not submission-ready
 reviewer guides without human review.
 
+## Public Data Notice
+
+This repository contains only synthetic and anonymous fixtures under
+`inst/extdata/`. Do not commit real study data, subject-level datasets, sponsor
+documents, protocol PDFs, SAPs, CSRs, aCRFs, API keys, or generated study
+projects. Local `studies/` and `.harness/` directories are ignored by git and by
+R package builds for that reason.
+
 ## Harness Quick Start
 
 Create a study project:
