@@ -22,3 +22,8 @@ test_that("rg_init_project respects overwrite and guide type flags", {
   updated <- yaml::read_yaml(file.path(proj, "config.yml"))
   expect_equal(updated$study$study_id, "TEST-002")
 })
+
+test_that("data class inference handles Windows path separators", {
+  expect_equal(rg_infer_data_class("C:\\study\\source\\tabulation\\dm.xpt"), "sdtm")
+  expect_equal(rg_infer_data_class("C:\\study\\source\\analysis\\adsl.xpt"), "adam")
+})

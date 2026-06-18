@@ -5,11 +5,11 @@ test_that("harness CLI runs bundled example end to end", {
   )
   found <- candidates[file.exists(candidates)]
   script <- if (length(found) > 0) found[[1]] else candidates[[1]]
-  script <- normalizePath(script, mustWork = FALSE)
+  script <- normalizePath(script, winslash = "/", mustWork = FALSE)
   skip_if_not(file.exists(script), "harness CLI script is not available in this check context")
 
   project <- tempfile("rg-harness-cli-")
-  rscript <- file.path(R.home("bin"), "Rscript")
+  rscript <- file.path(R.home("bin"), if (.Platform$OS.type == "windows") "Rscript.exe" else "Rscript")
   output <- system2(
     rscript,
     c(

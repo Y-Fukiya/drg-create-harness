@@ -20,6 +20,15 @@ has_flag <- function(args, name) {
   name %in% args
 }
 
+normalize_cli_path <- function(path) {
+  path <- path.expand(path)
+  is_absolute <- grepl("^([A-Za-z]:)?[\\/]", path) || startsWith(path, "\\\\")
+  if (!is_absolute) {
+    path <- file.path(getwd(), path)
+  }
+  normalizePath(path, winslash = "/", mustWork = FALSE)
+}
+
 usage <- function() {
   cat(paste(
     "Usage:",
@@ -55,19 +64,33 @@ script_file <- function() {
   normalizePath(sub("^--file=", "", file_arg[[1]]), mustWork = FALSE)
 }
 
+find_repo_root <- function(start) {
+  if (is.na(start) || !nzchar(start)) {
+    return(NA_character_)
+  }
+  current <- normalizePath(start, mustWork = FALSE)
+  for (i in seq_len(8)) {
+    if (file.exists(file.path(current, "DESCRIPTION")) && dir.exists(file.path(current, "R"))) {
+      return(current)
+    }
+    parent <- dirname(current)
+    if (identical(parent, current)) {
+      break
+    }
+    current <- parent
+  }
+  NA_character_
+}
+
 repo_root <- function() {
   file <- script_file()
   if (!is.na(file)) {
-    candidate <- normalizePath(file.path(dirname(file), ".."), mustWork = FALSE)
-    if (file.exists(file.path(candidate, "DESCRIPTION")) && dir.exists(file.path(candidate, "R"))) {
+    candidate <- find_repo_root(dirname(file))
+    if (!is.na(candidate)) {
       return(candidate)
     }
   }
-  cwd <- normalizePath(getwd(), mustWork = TRUE)
-  if (file.exists(file.path(cwd, "DESCRIPTION")) && dir.exists(file.path(cwd, "R"))) {
-    return(cwd)
-  }
-  NA_character_
+  find_repo_root(getwd())
 }
 
 load_engine <- function(root) {
@@ -85,7 +108,7 @@ load_engine <- function(root) {
       call. = FALSE
     )
   }
-  attachNamespace("reviewerguideR")
+  suppressPackageStartupMessages(library("reviewerguideR", character.only = TRUE))
   invisible("package")
 }
 
@@ -168,7 +191,7 @@ run_harness <- function(args = commandArgs(trailingOnly = TRUE)) {
   if (is.null(project_path) || !nzchar(project_path)) {
     stop("--project is required.", call. = FALSE)
   }
-  project_path <- normalizePath(project_path, mustWork = FALSE)
+  project_path <- normalize_cli_path(project_path)
 
   study_id <- arg_value(args, "--study-id", "STUDY-001")
   guide <- arg_value(args, "--guide", "both")
@@ -177,6 +200,7 @@ run_harness <- function(args = commandArgs(trailingOnly = TRUE)) {
   qc_level <- arg_value(args, "--qc-level", "basic")
   copy_example <- arg_value(args, "--copy-example", "none")
   summary_path <- arg_value(args, "--summary", file.path(project_path, "output", "harness_summary.json"))
+  summary_path <- normalize_cli_path(summary_path)
   should_init <- has_flag(args, "--init") || !file.exists(file.path(project_path, "config.yml"))
   no_run <- has_flag(args, "--no-run")
   fail_on_qc <- has_flag(args, "--fail-on-qc")

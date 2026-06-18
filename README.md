@@ -45,13 +45,27 @@ studies/ABC-001/output/harness_summary.json
 Run the bundled anonymous example:
 
 ```bash
-make run-example PROJECT=/private/tmp/rg-harness-demo EXAMPLE=anonymous
+make run-example PROJECT=.harness/rg-harness-demo EXAMPLE=anonymous
 ```
 
 The same flow is available without `make`:
 
 ```bash
 Rscript scripts/run_harness.R --project studies/ABC-001 --study-id ABC-001 --guide both
+```
+
+On Windows PowerShell:
+
+```powershell
+.\scripts\run_harness.ps1 -Project .\studies\ABC-001 -StudyId ABC-001 -Init -NoRun
+.\scripts\run_harness.ps1 -Project .\studies\ABC-001 -Guide both
+.\scripts\run_harness.ps1 -Project .\.harness\rg-demo -CopyExample anonymous
+```
+
+On Windows Command Prompt:
+
+```bat
+scripts\run_harness.cmd --project studies\ABC-001 --study-id ABC-001 --guide both
 ```
 
 See `harness/README.md` for the full harness directory contract and CLI options.
@@ -141,4 +155,4 @@ should stay in that local R process.
 
 The repository includes a GitHub Actions workflow at
 `.github/workflows/R-CMD-check.yaml` that runs R CMD check on pushes and pull
-requests to `master` or `main`.
+requests to `master` or `main` on Ubuntu and Windows.

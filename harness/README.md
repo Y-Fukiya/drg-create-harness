@@ -7,6 +7,8 @@ package. The package functions are the engine. The harness entrypoints are:
 - `make run`
 - `make run-example`
 - `Rscript scripts/run_harness.R ...`
+- `scripts\run_harness.ps1` on Windows PowerShell
+- `scripts\run_harness.cmd` on Windows Command Prompt
 
 ## Directory Contract
 
@@ -60,16 +62,29 @@ Run both guides:
 make run PROJECT=studies/ABC-001 GUIDE=both
 ```
 
+On Windows PowerShell, the same flow is:
+
+```powershell
+.\scripts\run_harness.ps1 -Project .\studies\ABC-001 -StudyId ABC-001 -Init -NoRun
+.\scripts\run_harness.ps1 -Project .\studies\ABC-001 -Guide both
+```
+
 ## Run The Bundled Example
 
 ```bash
-make run-example PROJECT=/private/tmp/rg-harness-demo EXAMPLE=anonymous
+make run-example PROJECT=.harness/rg-harness-demo EXAMPLE=anonymous
 ```
 
 The output DOCX files and summary JSON will be written under:
 
 ```text
-/private/tmp/rg-harness-demo/output/
+.harness/rg-harness-demo/output/
+```
+
+Windows PowerShell:
+
+```powershell
+.\scripts\run_harness.ps1 -Project .\.harness\rg-harness-demo -CopyExample anonymous
 ```
 
 ## Direct CLI
@@ -79,6 +94,12 @@ Rscript scripts/run_harness.R \
   --project studies/ABC-001 \
   --study-id ABC-001 \
   --guide both
+```
+
+Windows Command Prompt:
+
+```bat
+scripts\run_harness.cmd --project studies\ABC-001 --study-id ABC-001 --guide both
 ```
 
 Useful options:

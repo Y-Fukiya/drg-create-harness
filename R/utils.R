@@ -135,6 +135,7 @@ rg_infer_data_class <- function(path, requested = "auto") {
     return(requested)
   }
   lower <- tolower(as.character(path))
+  lower <- gsub("\\\\", "/", lower)
   if (grepl("analysis|adam|adsl|adae|adtte|ad[a-z0-9_]*\\.xpt", lower)) {
     return("adam")
   }

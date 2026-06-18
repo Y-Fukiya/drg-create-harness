@@ -1,4 +1,4 @@
-PROJECT ?= /private/tmp/reviewerguideR-harness
+PROJECT ?= .harness/reviewerguideR-harness
 STUDY_ID ?= STUDY-001
 GUIDE ?= both
 MODE ?= dry_run
@@ -12,7 +12,7 @@ help:
 	@echo "Harness commands:"
 	@echo "  make init PROJECT=studies/ABC-001 STUDY_ID=ABC-001"
 	@echo "  make run PROJECT=studies/ABC-001 GUIDE=both"
-	@echo "  make run-example PROJECT=/private/tmp/rg-demo EXAMPLE=anonymous"
+	@echo "  make run-example PROJECT=.harness/rg-demo EXAMPLE=anonymous"
 	@echo "  make test"
 	@echo "  make check"
 

@@ -6,3 +6,4 @@
 ^.*\.Rcheck$
 ^.*\.tar\.gz$
 ^\.github$
+^\.harness
