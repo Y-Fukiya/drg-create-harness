@@ -32,6 +32,27 @@ rg_xpath_child <- function(name) {
   paste0("./*[local-name()='", name, "']")
 }
 
+rg_origin_info <- function(item) {
+  origin_node <- xml2::xml_find_first(item, rg_xpath_anywhere("Origin"))
+  if (inherits(origin_node, "xml_missing")) {
+    return(list(type = NA_character_, detail = NA_character_))
+  }
+  origin_type <- rg_xml_attr_any(origin_node, "Type", NA_character_)
+  origin_detail <- rg_xml_text_first(origin_node, ".//*[local-name()='Description']/*[local-name()='TranslatedText']", NA_character_)
+  if (is.na(origin_detail)) {
+    origin_detail <- rg_xml_text_first(origin_node, ".//*[local-name()='TranslatedText']", NA_character_)
+  }
+  if (is.na(origin_detail)) {
+    text <- trimws(xml2::xml_text(origin_node))
+    origin_detail <- if (nzchar(text) && !identical(text, origin_type)) text else NA_character_
+  }
+  list(type = origin_type, detail = origin_detail)
+}
+
+rg_needs_review_valuelevel <- function(...) {
+  any(as.logical(unlist(list(...), use.names = FALSE)), na.rm = TRUE)
+}
+
 rg_extract_define <- function(define_xml, study_id = NULL, data_class = c("auto", "sdtm", "adam", "unknown")) {
   data_class <- match.arg(data_class)
   source_define <- rg_norm_path(define_xml)
@@ -43,11 +64,8 @@ rg_extract_define <- function(define_xml, study_id = NULL, data_class = c("auto"
   doc <- xml2::xml_ns_strip(doc)
 
   if (is.null(study_id)) {
-    study_id <- rg_xml_attr_any(xml2::xml_find_first(doc, ".//*[local-name()='GlobalVariables']/*[local-name()='StudyName']"), "OID", NA_character_)
-    if (is.na(study_id)) {
-      study_name <- rg_xml_text_first(doc, rg_xpath_anywhere("StudyName"), NA_character_)
-      study_id <- study_name %||% NA_character_
-    }
+    study_name <- rg_xml_text_first(doc, rg_xpath_anywhere("StudyName"), NA_character_)
+    study_id <- study_name %||% NA_character_
   }
 
   item_defs <- xml2::xml_find_all(doc, rg_xpath_anywhere("ItemDef"))
@@ -110,12 +128,7 @@ rg_extract_define <- function(define_xml, study_id = NULL, data_class = c("auto"
         } else {
           NA_character_
         }
-        origin <- if (!inherits(item, "xml_missing")) {
-          origin_node <- xml2::xml_find_first(item, rg_xpath_anywhere("Origin"))
-          if (inherits(origin_node, "xml_missing")) NA_character_ else rg_xml_attr_any(origin_node, "Type", xml2::xml_text(origin_node))
-        } else {
-          NA_character_
-        }
+        origin_info <- if (!inherits(item, "xml_missing")) rg_origin_info(item) else list(type = NA_character_, detail = NA_character_)
         variable_evidence_id <- rg_make_evidence_id("DEFVAR", source_define, paste(dataset_oid, item_oid, sep = "/"), j)
         variable_name <- if (!inherits(item, "xml_missing")) rg_xml_attr_any(item, "Name") else NA_character_
         item_context[[item_oid]] <- list(
@@ -138,7 +151,8 @@ rg_extract_define <- function(define_xml, study_id = NULL, data_class = c("auto"
           mandatory = rg_xml_attr_any(ref, "Mandatory"),
           key_sequence = rg_xml_attr_any(ref, "KeySequence"),
           role = rg_xml_attr_any(ref, "Role"),
-          origin = origin,
+          origin = origin_info$type,
+          origin_detail = origin_info$detail,
           method_oid = rg_xml_attr_any(ref, "MethodOID"),
           codelist_oid = codelist_ref,
           source_define = source_define,
@@ -165,6 +179,17 @@ rg_extract_define <- function(define_xml, study_id = NULL, data_class = c("auto"
   for (i in seq_along(codelist_nodes)) {
     node <- codelist_nodes[[i]]
     codelist_oid <- rg_xml_attr_any(node, "OID")
+    external_node <- xml2::xml_find_first(node, rg_xpath_child("ExternalCodeList"))
+    external_dictionary <- if (inherits(external_node, "xml_missing")) {
+      NA_character_
+    } else {
+      rg_xml_attr_any(external_node, c("Dictionary", "Name"))
+    }
+    external_version <- if (inherits(external_node, "xml_missing")) {
+      NA_character_
+    } else {
+      rg_xml_attr_any(external_node, "Version")
+    }
     item_nodes <- xml2::xml_find_all(node, "./*[local-name()='CodeListItem' or local-name()='EnumeratedItem']")
     if (length(item_nodes) == 0) {
       item_nodes <- list(xml2::xml_missing())
@@ -185,6 +210,8 @@ rg_extract_define <- function(define_xml, study_id = NULL, data_class = c("auto"
         data_type = rg_xml_attr_any(node, "DataType"),
         coded_value = coded_value,
         decode = decode,
+        external_dictionary = external_dictionary,
+        external_version = external_version,
         source_define = source_define,
         evidence_id = evidence_id
       )
@@ -239,6 +266,8 @@ rg_extract_define <- function(define_xml, study_id = NULL, data_class = c("auto"
   }
 
   valuelevel_rows <- list()
+  where_clause_nodes <- xml2::xml_find_all(doc, rg_xpath_anywhere("WhereClauseDef"))
+  where_clause_oids <- vapply(where_clause_nodes, rg_xml_attr_any, character(1), names = "OID")
   value_list_nodes <- xml2::xml_find_all(doc, rg_xpath_anywhere("ValueListDef"))
   for (i in seq_along(value_list_nodes)) {
     node <- value_list_nodes[[i]]
@@ -253,13 +282,24 @@ rg_extract_define <- function(define_xml, study_id = NULL, data_class = c("auto"
       where_ref <- if (inherits(ref, "xml_missing")) {
         NA_character_
       } else {
-        rg_xml_attr_any(xml2::xml_find_first(ref, rg_xpath_anywhere("WhereClauseRef")), "WhereClauseOID", NA_character_)
+        where_oid <- rg_xml_attr_any(ref, "WhereClauseOID", NA_character_)
+        if (is.na(where_oid)) {
+          where_oid <- rg_xml_attr_any(xml2::xml_find_first(ref, rg_xpath_anywhere("WhereClauseRef")), "WhereClauseOID", NA_character_)
+        }
+        where_oid
       }
       context <- if (!is.na(item_oid) && item_oid %in% names(item_context)) item_context[[item_oid]] else list()
       item <- if (!is.na(item_oid) && item_oid %in% names(item_defs)) item_defs[[item_oid]] else NULL
       variable_name <- context$variable_name %||% if (!is.null(item) && !inherits(item, "xml_missing")) rg_xml_attr_any(item, "Name") else NA_character_
       locator <- paste0("ValueListDef[", value_list_oid, "]/ItemRef[", item_oid, "]")
       evidence_id <- rg_make_evidence_id("DEFVL", source_define, locator, j)
+      needs_review <- rg_needs_review_valuelevel(
+        inherits(ref, "xml_missing"),
+        is.na(item_oid),
+        !is.na(item_oid) && !item_oid %in% names(item_defs),
+        !is.na(item_oid) && !item_oid %in% names(item_context),
+        !is.na(where_ref) && !where_ref %in% where_clause_oids
+      )
       valuelevel_rows[[length(valuelevel_rows) + 1]] <- tibble::tibble(
         study_id = study_id %||% NA_character_,
         data_class = data_class,
@@ -278,7 +318,7 @@ rg_extract_define <- function(define_xml, study_id = NULL, data_class = c("auto"
         soft_hard = NA_character_,
         source_define = source_define,
         evidence_id = evidence_id,
-        needs_human_review = FALSE
+        needs_human_review = needs_review
       )
       evidence_rows[[length(evidence_rows) + 1]] <- rg_new_evidence(
         evidence_id = evidence_id,
@@ -289,16 +329,17 @@ rg_extract_define <- function(define_xml, study_id = NULL, data_class = c("auto"
         locator = locator,
         extracted_value = paste(stats::na.omit(c(value_list_oid, variable_name)), collapse = " - "),
         extraction_method = "parser",
-        confidence = 0.8
+        confidence = if (needs_review) 0.55 else 0.8,
+        needs_human_review = needs_review
       )
     }
   }
 
-  where_clause_nodes <- xml2::xml_find_all(doc, rg_xpath_anywhere("WhereClauseDef"))
   for (i in seq_along(where_clause_nodes)) {
     node <- where_clause_nodes[[i]]
     where_clause_oid <- rg_xml_attr_any(node, "OID")
     range_checks <- xml2::xml_find_all(node, rg_xpath_child("RangeCheck"))
+    multiple_range_checks <- length(range_checks) > 1
     if (length(range_checks) == 0) {
       range_checks <- list(xml2::xml_missing())
     }
@@ -318,6 +359,17 @@ rg_extract_define <- function(define_xml, study_id = NULL, data_class = c("auto"
       }
       locator <- paste0("WhereClauseDef[", where_clause_oid, "]/RangeCheck[", item_oid, "]")
       evidence_id <- rg_make_evidence_id("DEFWC", source_define, locator, j)
+      comparator <- if (inherits(range_check, "xml_missing")) NA_character_ else rg_xml_attr_any(range_check, "Comparator")
+      soft_hard <- if (inherits(range_check, "xml_missing")) NA_character_ else rg_xml_attr_any(range_check, "SoftHard")
+      needs_review <- rg_needs_review_valuelevel(
+        inherits(range_check, "xml_missing"),
+        multiple_range_checks,
+        is.na(item_oid),
+        !is.na(item_oid) && !item_oid %in% names(item_defs),
+        !is.na(item_oid) && !item_oid %in% names(item_context),
+        is.na(comparator),
+        is.na(check_value)
+      )
       valuelevel_rows[[length(valuelevel_rows) + 1]] <- tibble::tibble(
         study_id = study_id %||% NA_character_,
         data_class = data_class,
@@ -331,12 +383,12 @@ rg_extract_define <- function(define_xml, study_id = NULL, data_class = c("auto"
         method_oid = NA_character_,
         where_item_oid = item_oid,
         where_variable_name = variable_name,
-        comparator = if (inherits(range_check, "xml_missing")) NA_character_ else rg_xml_attr_any(range_check, "Comparator"),
+        comparator = comparator,
         check_value = check_value,
-        soft_hard = if (inherits(range_check, "xml_missing")) NA_character_ else rg_xml_attr_any(range_check, "SoftHard"),
+        soft_hard = soft_hard,
         source_define = source_define,
         evidence_id = evidence_id,
-        needs_human_review = FALSE
+        needs_human_review = needs_review
       )
       evidence_rows[[length(evidence_rows) + 1]] <- rg_new_evidence(
         evidence_id = evidence_id,
@@ -347,7 +399,8 @@ rg_extract_define <- function(define_xml, study_id = NULL, data_class = c("auto"
         locator = locator,
         extracted_value = paste(stats::na.omit(c(where_clause_oid, variable_name, check_value)), collapse = " - "),
         extraction_method = "parser",
-        confidence = 0.8
+        confidence = if (needs_review) 0.55 else 0.8,
+        needs_human_review = needs_review
       )
     }
   }

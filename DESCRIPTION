@@ -30,7 +30,6 @@ Imports:
     purrr,
     stringr,
     tibble,
-    tidyr,
     xml2,
     yaml
 Suggests:

@@ -9,5 +9,5 @@ test_that("synthetic E2E example script runs from package fixtures", {
   expect_true(env$result$dataset_rows > 0)
   expect_true(env$result$validation_finding_rows > 0)
   expect_equal(env$result$draft_sections, 5)
-  expect_true(env$result$qc_fail_rows > 0)
+  expect_equal(env$result$qc_fail_rows, 0)
 })

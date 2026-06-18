@@ -167,6 +167,9 @@ should fail on any QC issue.
   are intentionally outside the MVP fallback.
 - `ValueListDef` and `WhereClauseDef` are expanded into the flat
   `work/extracted/define_valuelevel.csv` table when ItemRef and RangeCheck
-  metadata are present. More complex relationships still require human review.
+  metadata are present. More complex relationships are flagged as human-review
+  items.
+- External codelist dictionary/version attributes and Origin detail text are
+  extracted when present.
 - ellmer, ragnar, iADRG/icSDRG, and GraphRAG remain next-phase integration
   points.

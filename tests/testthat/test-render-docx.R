@@ -44,7 +44,11 @@ test_that("rg_render_docx continues when QC has failing rows", {
   copy_synthetic_sources(proj)
   rg_scan_sources(proj)
   rg_extract_metadata(proj)
-  rg_draft_guide(proj, guide_type = "adrg", mode = "dry_run")
+  draft <- rg_draft_guide(proj, guide_type = "adrg", mode = "dry_run")
+  draft$sections[[1]]$draft_markdown <- "TBD: draft content requires targeted review."
+  draft$sections[[1]]$needs_human_review <- TRUE
+  draft$sections[[1]]$status <- "needs_review"
+  jsonlite::write_json(draft, file.path(proj, "work", "drafts", "adrg_draft.json"), pretty = TRUE, auto_unbox = TRUE)
 
   qc <- rg_qc(proj, guide_type = "adrg")
   expect_true(any(qc$status == "fail"))

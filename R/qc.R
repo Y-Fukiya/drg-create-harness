@@ -59,7 +59,7 @@ rg_qc <- function(project_path, guide_type = c("adrg", "csdrg"), level = c("basi
 
   draft_sections <- if (draft_exists) draft$sections else list()
   section_ids <- vapply(draft_sections, function(x) x$section_id %||% NA_character_, character(1))
-  required <- spec$section_id[isTRUE(spec$required) | spec$required]
+  required <- spec$section_id[spec$required]
   missing_sections <- setdiff(required, section_ids)
   rows[[length(rows) + 1]] <- rg_qc_row(
     "required_sections", guide_type,
@@ -218,11 +218,12 @@ rg_qc_summary_status <- function(error_fail_rows, warning_fail_rows) {
 rg_update_combined_qc_summary <- function(project_path, summary_row) {
   combined_path <- fs::path(project_path, "work", "qc", "qc_summary.csv")
   combined <- rg_read_csv_if_exists(combined_path, rg_qc_summary_columns())
+  summary_for_write <- dplyr::mutate(summary_row, dplyr::across(dplyr::everything(), as.character))
   if (nrow(combined) == 0) {
-    combined <- summary_row
+    combined <- summary_for_write
   } else {
     combined <- combined[combined$guide_type != summary_row$guide_type[[1]], , drop = FALSE]
-    combined <- dplyr::bind_rows(combined, summary_row)
+    combined <- dplyr::bind_rows(combined, summary_for_write)
   }
   rg_write_csv(combined, combined_path)
   invisible(combined_path)

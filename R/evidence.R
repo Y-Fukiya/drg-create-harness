@@ -22,7 +22,12 @@ rg_validation_evidence <- function(validation_findings) {
   dplyr::mutate(
     validation_findings,
     source_type = "validation",
-    locator = paste(rule_id %||% NA_character_, dataset_name %||% NA_character_, variable_name %||% NA_character_, sep = " / "),
+    locator = paste(
+      dplyr::coalesce(as.character(.data$rule_id), "NA"),
+      dplyr::coalesce(as.character(.data$dataset_name), "NA"),
+      dplyr::coalesce(as.character(.data$variable_name), "NA"),
+      sep = " / "
+    ),
     extracted_value = message,
     extraction_method = "validation_import",
     confidence = 0.9,

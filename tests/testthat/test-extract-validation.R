@@ -65,6 +65,24 @@ test_that("rg_extract_validation supports explicit validation column mapping", {
   expect_equal(findings$sponsor_explanation, "Explain in ADRG")
 })
 
+test_that("rg_extract_validation keeps CSV identifiers as text and parses comma counts", {
+  csv <- tempfile(fileext = ".csv")
+  utils::write.csv(data.frame(
+    `Rule ID` = "00123",
+    Severity = "Warning",
+    Dataset = "ADSL",
+    Variable = "USUBJID",
+    Message = "Identifier retains leading zeros",
+    Count = "1,234",
+    check.names = FALSE
+  ), csv, row.names = FALSE)
+
+  findings <- rg_extract_validation(csv, study_id = "TEST-001", data_class = "adam")
+
+  expect_equal(findings$rule_id, "00123")
+  expect_equal(findings$count, 1234L)
+})
+
 test_that("rg_extract_metadata applies validation column mapping from config.yml", {
   proj <- tempfile("rg-project-")
   rg_init_project(proj, study_id = "TEST-001")

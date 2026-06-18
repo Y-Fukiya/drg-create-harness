@@ -51,6 +51,24 @@ rg_unresolved_evidence_ids <- function(data) {
   rg_section_evidence(data$define_datasets$evidence_id, data$validation_findings$evidence_id, limit = 25)
 }
 
+rg_has_unresolved_metadata <- function(data) {
+  datasets <- data$define_datasets
+  no_datasets <- nrow(datasets) == 0
+  has_tbd_metadata <- if (nrow(datasets) > 0) {
+    any(grepl("TBD", c(datasets$dataset_label, datasets$structure), ignore.case = TRUE), na.rm = TRUE)
+  } else {
+    FALSE
+  }
+  no_datasets || has_tbd_metadata || nrow(rg_unsupported_define_evidence(data)) > 0
+}
+
+rg_section_needs_human_review <- function(section_id, text, evidence_ids, data) {
+  has_tbd_text <- grepl("\\bTBD\\b", text %||% "", ignore.case = TRUE)
+  missing_evidence <- length(evidence_ids) == 0
+  unresolved_section_has_gaps <- identical(section_id, "unresolved_items") && rg_has_unresolved_metadata(data)
+  has_tbd_text || missing_evidence || unresolved_section_has_gaps
+}
+
 rg_draft_text_for_section <- function(section_id, title, guide_type, study_id, data) {
   data_name <- if (identical(guide_type, "adrg")) "analysis" else "tabulation"
   standard_name <- if (identical(guide_type, "adrg")) "ADaM" else "SDTM"
@@ -95,7 +113,6 @@ rg_draft_text_for_section <- function(section_id, title, guide_type, study_id, d
     }
     severity_summary <- findings |>
       dplyr::mutate(severity = dplyr::if_else(is.na(.data$severity) | !nzchar(.data$severity), "Unspecified", .data$severity)) |>
-      tidyr::replace_na(list(severity = "Unspecified")) |>
       dplyr::count(.data$severity, name = "n") |>
       dplyr::mutate(text = paste0(.data$severity, ": ", .data$n)) |>
       dplyr::pull("text") |>
@@ -161,18 +178,20 @@ rg_draft_guide <- function(project_path, guide_type = c("adrg", "csdrg"), mode =
         if (grepl("dataset", section_id)) data$define_variables$evidence_id else NULL
       )
     )
-    list(
+    section <- list(
       guide_type = guide_type,
       study_id = study_id,
       section_id = section_id,
       section_title = spec$title[[i]],
       draft_markdown = text,
       evidence_ids = evidence_ids,
-      status = if (grepl("TBD", text, ignore.case = TRUE) || length(evidence_ids) == 0) "needs_review" else "draft",
+      status = "draft",
       generated_by = "dry_run",
       generated_at = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
-      needs_human_review = grepl("TBD|human review|required", text, ignore.case = TRUE) || length(evidence_ids) == 0
+      needs_human_review = rg_section_needs_human_review(section_id, text, evidence_ids, data)
     )
+    section$status <- if (isTRUE(section$needs_human_review)) "needs_review" else "draft"
+    section
   })
 
   draft <- list(
