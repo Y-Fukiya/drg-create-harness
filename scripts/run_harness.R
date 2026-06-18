@@ -43,6 +43,7 @@ usage <- function() {
     "  --init                     Initialize the project if needed.",
     "  --no-run                   Initialize/copy inputs only; skip generation.",
     "  --copy-example NAME        Copy bundled inputs: synthetic, anonymous, or none.",
+    "  --interactive             Prompt for common harness options.",
     "  --summary PATH             Summary JSON path. Default: output/harness_summary.json.",
     "  --fail-on-qc               Exit with status 2 when any QC row fails.",
     "  --help                     Show this help.",
@@ -53,6 +54,30 @@ usage <- function() {
     "  Rscript scripts/run_harness.R --project studies/ABC-001 --guide both",
     sep = "\n"
   ), "\n")
+}
+
+prompt_value <- function(label, default = NULL, choices = NULL) {
+  suffix <- if (!is.null(default) && nzchar(default)) paste0(" [", default, "]") else ""
+  cat(label, suffix, ": ", sep = "")
+  answer <- readLines("stdin", n = 1, warn = FALSE)
+  if (length(answer) == 0 || !nzchar(trimws(answer))) {
+    answer <- default
+  } else {
+    answer <- trimws(answer)
+  }
+  if (!is.null(choices) && !answer %in% choices) {
+    stop(label, " must be one of: ", paste(choices, collapse = ", "), call. = FALSE)
+  }
+  answer
+}
+
+prompt_yes_no <- function(label, default = TRUE) {
+  default_text <- if (isTRUE(default)) "Y/n" else "y/N"
+  answer <- prompt_value(label, default = default_text)
+  if (identical(answer, default_text)) {
+    return(isTRUE(default))
+  }
+  tolower(answer) %in% c("y", "yes", "true", "1")
 }
 
 script_file <- function() {
@@ -163,15 +188,6 @@ copy_fixture <- function(example, project_path, root) {
   invisible(TRUE)
 }
 
-summarise_qc <- function(qc) {
-  list(
-    rows = nrow(qc),
-    fail_rows = sum(qc$status == "fail", na.rm = TRUE),
-    warning_fail_rows = sum(qc$status == "fail" & qc$severity == "warning", na.rm = TRUE),
-    error_fail_rows = sum(qc$status == "fail" & qc$severity == "error", na.rm = TRUE)
-  )
-}
-
 write_summary <- function(summary, path) {
   dir.create(dirname(path), recursive = TRUE, showWarnings = FALSE)
   jsonlite::write_json(summary, path, pretty = TRUE, auto_unbox = TRUE, null = "null")
@@ -188,6 +204,10 @@ run_harness <- function(args = commandArgs(trailingOnly = TRUE)) {
   load_engine(root)
 
   project_path <- arg_value(args, "--project")
+  interactive_mode <- has_flag(args, "--interactive")
+  if (isTRUE(interactive_mode) && (is.null(project_path) || !nzchar(project_path))) {
+    project_path <- prompt_value("Project path", default = "studies/ABC-001")
+  }
   if (is.null(project_path) || !nzchar(project_path)) {
     stop("--project is required.", call. = FALSE)
   }
@@ -195,15 +215,24 @@ run_harness <- function(args = commandArgs(trailingOnly = TRUE)) {
 
   study_id <- arg_value(args, "--study-id", "STUDY-001")
   guide <- arg_value(args, "--guide", "both")
+  copy_example <- arg_value(args, "--copy-example", "none")
+  if (isTRUE(interactive_mode)) {
+    study_id <- prompt_value("Study id", default = study_id)
+    guide <- prompt_value("Guide", default = guide, choices = c("both", "adrg", "csdrg"))
+    copy_example <- prompt_value("Copy bundled example", default = copy_example, choices = c("none", "synthetic", "anonymous"))
+  }
   guides <- guide_types(guide)
   mode <- arg_value(args, "--mode", "dry_run")
   qc_level <- arg_value(args, "--qc-level", "basic")
-  copy_example <- arg_value(args, "--copy-example", "none")
   summary_path <- arg_value(args, "--summary", file.path(project_path, "output", "harness_summary.json"))
   summary_path <- normalize_cli_path(summary_path)
   should_init <- has_flag(args, "--init") || !file.exists(file.path(project_path, "config.yml"))
   no_run <- has_flag(args, "--no-run")
   fail_on_qc <- has_flag(args, "--fail-on-qc")
+  if (isTRUE(interactive_mode)) {
+    no_run <- !prompt_yes_no("Run generation now", default = !no_run)
+    fail_on_qc <- prompt_yes_no("Fail on QC findings", default = fail_on_qc)
+  }
 
   if (!mode %in% c("dry_run", "ellmer")) {
     stop("--mode must be one of: dry_run, ellmer", call. = FALSE)
@@ -243,15 +272,17 @@ run_harness <- function(args = commandArgs(trailingOnly = TRUE)) {
   outputs <- lapply(guides, function(guide_type) {
     draft <- rg_draft_guide(project_path, guide_type = guide_type, mode = mode, write = TRUE)
     qc <- rg_qc(project_path, guide_type = guide_type, level = qc_level, write = TRUE)
+    qc_summary <- rg_qc_summary(project_path, guide_type = guide_type, qc = qc, write = TRUE)
     docx <- rg_render_docx(project_path, guide_type = guide_type)
-    qc_summary <- summarise_qc(qc)
+    qc_summary_row <- as.list(qc_summary[1, ])
     list(
       guide_type = guide_type,
       draft_path = file.path(project_path, "work", "drafts", paste0(guide_type, "_draft.json")),
-      qc_path = file.path(project_path, "work", "qc", "qc_report.csv"),
+      qc_path = file.path(project_path, "work", "qc", paste0(guide_type, "_qc_report.csv")),
+      qc_summary_path = file.path(project_path, "work", "qc", paste0(guide_type, "_qc_summary.csv")),
       docx_path = docx,
       sections = length(draft$sections),
-      qc = qc_summary
+      qc = qc_summary_row
     )
   })
   names(outputs) <- guides
@@ -272,7 +303,7 @@ run_harness <- function(args = commandArgs(trailingOnly = TRUE)) {
   cat("  define datasets: ", summary$define_dataset_rows, "\n", sep = "")
   cat("  validation findings: ", summary$validation_finding_rows, "\n", sep = "")
   for (out in outputs) {
-    cat("  ", out$guide_type, ": ", out$docx_path, " (QC fail rows: ", out$qc$fail_rows, ")\n", sep = "")
+    cat("  ", out$guide_type, ": ", out$docx_path, " (QC status: ", out$qc$summary_status, ", fail rows: ", out$qc$fail_rows, ")\n", sep = "")
   }
   cat("  summary: ", summary_path, "\n", sep = "")
 

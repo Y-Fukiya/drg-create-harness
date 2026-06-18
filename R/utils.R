@@ -62,6 +62,7 @@ rg_empty_tbl <- function(columns) {
 }
 
 rg_bind_or_empty <- function(rows, columns) {
+  rows <- Filter(function(x) !is.null(x) && nrow(x) > 0, rows)
   if (length(rows) == 0) {
     return(rg_empty_tbl(columns))
   }
@@ -112,12 +113,31 @@ rg_define_method_columns <- function() {
   )
 }
 
+rg_define_valuelevel_columns <- function() {
+  c(
+    "study_id", "data_class", "value_list_oid", "where_clause_oid",
+    "dataset_oid", "dataset_name", "variable_oid", "variable_name",
+    "mandatory", "method_oid", "where_item_oid", "where_variable_name",
+    "comparator", "check_value", "soft_hard", "source_define",
+    "evidence_id", "needs_human_review"
+  )
+}
+
 rg_validation_columns <- function() {
   c(
     "study_id", "data_class", "source_file", "tool_name", "tool_version",
     "standard", "standard_version", "rule_id", "severity", "dataset_name",
     "variable_name", "message", "count", "sponsor_explanation", "status",
     "evidence_id"
+  )
+}
+
+rg_qc_summary_columns <- function() {
+  c(
+    "guide_type", "summary_status", "total_rows", "pass_rows", "fail_rows",
+    "info_rows", "warning_rows", "error_rows", "warning_fail_rows",
+    "error_fail_rows", "review_required_rows", "manifest_drift_rows",
+    "missing_evidence_rows"
   )
 }
 

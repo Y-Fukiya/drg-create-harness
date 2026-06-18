@@ -29,9 +29,16 @@ study-project/
   work/
     manifest.json
     extracted/
+      define_valuelevel.csv
     drafts/
     evidence/
     qc/
+      adrg_qc_report.csv
+      csdrg_qc_report.csv
+      qc_report.csv
+      adrg_qc_summary.csv
+      csdrg_qc_summary.csv
+      qc_summary.csv
   output/
     adrg_draft.docx
     csdrg_draft.docx
@@ -55,6 +62,24 @@ Minimum useful inputs:
 - ADaM validation findings: `source/analysis/validation/*.csv` or `*.xlsx`
 - SDTM define.xml: `source/tabulation/define.xml`
 - SDTM validation findings: `source/tabulation/validation/*.csv` or `*.xlsx`
+
+If your validation export uses non-standard column names, edit
+`config.yml` before running:
+
+```yaml
+validation:
+  column_mapping:
+    rule_id: ["Finding Identifier", "Rule Reference"]
+    severity: ["Impact Classification", "Finding Grade"]
+    dataset_name: ["Dataset Code", "Data Set"]
+    variable_name: ["Variable Code", "Variable Column"]
+    message: ["Finding Narrative", "Finding Text"]
+    count: ["Records Impacted", "Rows Impacted"]
+    sponsor_explanation: ["Response Text"]
+    status: ["Review Disposition"]
+```
+
+You only need to list the fields that differ from the built-in defaults.
 
 Run both guides:
 
@@ -102,11 +127,18 @@ Windows Command Prompt:
 scripts\run_harness.cmd --project studies\ABC-001 --study-id ABC-001 --guide both
 ```
 
+Guided prompt flow:
+
+```bash
+Rscript scripts/run_harness.R --interactive --project studies/ABC-001
+```
+
 Useful options:
 
 - `--init`: initialize the project if needed.
 - `--no-run`: initialize/copy inputs and stop before generation.
 - `--copy-example synthetic|anonymous`: populate `source/` from bundled fixtures.
+- `--interactive`: prompt for common project, guide, example, and run options.
 - `--fail-on-qc`: return exit code 2 when any QC row fails.
 - `--summary PATH`: write summary JSON somewhere other than `output/harness_summary.json`.
 
@@ -118,8 +150,9 @@ Each run performs the same deterministic pipeline:
 2. extract define.xml and validation metadata into `work/extracted/`
 3. build evidence rows in `work/evidence/evidence_table.csv`
 4. draft ADRG/cSDRG JSON under `work/drafts/`
-5. write QC rows to `work/qc/qc_report.csv`
-6. render DOCX files under `output/`
+5. write guide-specific QC rows and summaries under `work/qc/`
+6. render DOCX files under `output/`, including a compact QC summary when
+   available
 7. write `output/harness_summary.json`
 
 QC failures do not stop DOCX generation by default. They are review signals for
@@ -132,7 +165,8 @@ should fail on any QC issue.
   simple single-sheet workbooks.
 - Multiple-sheet XLSX, merged cells, formula cells, and complex type inference
   are intentionally outside the MVP fallback.
-- `ValueListDef` and `WhereClauseDef` are detected and surfaced as QC review
-  items, but are not expanded into full reviewer-guide text yet.
+- `ValueListDef` and `WhereClauseDef` are expanded into the flat
+  `work/extracted/define_valuelevel.csv` table when ItemRef and RangeCheck
+  metadata are present. More complex relationships still require human review.
 - ellmer, ragnar, iADRG/icSDRG, and GraphRAG remain next-phase integration
   points.

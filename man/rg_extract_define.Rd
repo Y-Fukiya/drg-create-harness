@@ -10,9 +10,11 @@ rg_extract_define(define_xml, study_id = NULL, data_class = c("auto", "sdtm", "a
 \item{data_class}{Data class: \code{"auto"}, \code{"sdtm"}, \code{"adam"}, or \code{"unknown"}.}
 }
 \description{
-Extract basic dataset, variable, codelist, method, and evidence metadata from
-\code{define.xml}. The parser is intentionally basic and does not fully expand
-ValueListDef or WhereClauseDef metadata.
+Extract dataset, variable, codelist, method, limited value-level, and evidence
+metadata from \code{define.xml}. ValueListDef and WhereClauseDef support is
+limited to ItemRef and RangeCheck metadata that can be represented in the
+\code{define_valuelevel} table.
 }
 \value{A list of tibbles: \code{define_datasets}, \code{define_variables},
-\code{define_codelists}, \code{define_methods}, and \code{evidence_table}.}
+\code{define_codelists}, \code{define_methods}, \code{define_valuelevel}, and
+\code{evidence_table}.}

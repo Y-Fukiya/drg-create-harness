@@ -4,6 +4,7 @@ rg_load_extracted <- function(project_path) {
     define_variables = rg_read_csv_if_exists(fs::path(project_path, "work", "extracted", "define_variables.csv"), rg_define_variable_columns()),
     define_codelists = rg_read_csv_if_exists(fs::path(project_path, "work", "extracted", "define_codelists.csv"), rg_define_codelist_columns()),
     define_methods = rg_read_csv_if_exists(fs::path(project_path, "work", "extracted", "define_methods.csv"), rg_define_method_columns()),
+    define_valuelevel = rg_read_csv_if_exists(fs::path(project_path, "work", "extracted", "define_valuelevel.csv"), rg_define_valuelevel_columns()),
     validation_findings = rg_read_csv_if_exists(fs::path(project_path, "work", "extracted", "validation_findings.csv"), rg_validation_columns()),
     evidence_table = rg_read_csv_if_exists(fs::path(project_path, "work", "evidence", "evidence_table.csv"), rg_evidence_columns())
   )
@@ -27,7 +28,10 @@ rg_section_evidence <- function(..., limit = 100) {
 
 rg_unsupported_define_evidence <- function(data) {
   data$evidence_table |>
-    dplyr::filter(grepl("^(ValueListDef|WhereClauseDef)\\[", .data$locator))
+    dplyr::filter(
+      grepl("^(ValueListDef|WhereClauseDef)\\[", .data$locator),
+      .data$needs_human_review %in% c(TRUE, "TRUE", "true", "1")
+    )
 }
 
 rg_unresolved_evidence_ids <- function(data) {
@@ -53,6 +57,7 @@ rg_draft_text_for_section <- function(section_id, title, guide_type, study_id, d
   datasets <- data$define_datasets
   variables <- data$define_variables
   findings <- data$validation_findings
+  valuelevel <- data$define_valuelevel
   unsupported_define <- rg_unsupported_define_evidence(data)
   dataset_names <- sort(unique(stats::na.omit(datasets$dataset_name)))
   finding_count <- nrow(findings)
@@ -80,7 +85,8 @@ rg_draft_text_for_section <- function(section_id, title, guide_type, study_id, d
     preview <- paste(utils::head(dataset_names, 12), collapse = ", ")
     return(glue::glue(
       "The submitted {standard_name} dataset inventory contains {dataset_count} datasets and {variable_count} variables. ",
-      "Datasets identified from define.xml include {preview}."
+      "Datasets identified from define.xml include {preview}. ",
+      "Value-level metadata rows extracted from define.xml: {nrow(valuelevel)}."
     ))
   }
   if (grepl("conformance_findings$", section_id)) {

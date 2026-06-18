@@ -111,21 +111,29 @@ rg_qc <- function(project_path, guide_type = c("adrg", "csdrg"), level = c("basi
     "validation_findings", paste(unknown_validation_datasets, collapse = ", ")
   )
 
-  unsupported_define <- data$evidence_table |>
+  complex_define_evidence <- data$evidence_table |>
     dplyr::filter(grepl("^(ValueListDef|WhereClauseDef)\\[", .data$locator))
+  unsupported_define <- complex_define_evidence |>
+    dplyr::filter(.data$needs_human_review %in% c(TRUE, "TRUE", "true", "1"))
+  has_complex_define <- nrow(complex_define_evidence) > 0
+  extracted_valuelevel_count <- nrow(data$define_valuelevel)
   rows[[length(rows) + 1]] <- rg_qc_row(
-    "unsupported_define_metadata", guide_type,
+    "define_valuelevel_metadata", guide_type,
     if (nrow(unsupported_define) == 0) "info" else "warning",
     if (nrow(unsupported_define) == 0) "pass" else "fail",
-    if (nrow(unsupported_define) == 0) {
-      "No unsupported ValueListDef or WhereClauseDef metadata was detected."
+    if (!has_complex_define) {
+      "No ValueListDef or WhereClauseDef metadata was detected."
+    } else if (nrow(unsupported_define) == 0 && extracted_valuelevel_count > 0) {
+      paste(extracted_valuelevel_count, "ValueListDef/WhereClauseDef rows were extracted into define_valuelevel.csv.")
+    } else if (nrow(unsupported_define) == 0) {
+      "ValueListDef/WhereClauseDef metadata was detected but no extracted rows were available."
     } else {
       paste(
-        "define.xml contains ValueListDef/WhereClauseDef metadata that the MVP parser detects but does not expand:",
+        "define.xml contains ValueListDef/WhereClauseDef metadata requiring human review:",
         paste(unique(unsupported_define$locator), collapse = ", ")
       )
     },
-    "define", paste(unique(unsupported_define$locator), collapse = ", ")
+    "define_valuelevel", paste(unique(complex_define_evidence$locator), collapse = ", ")
   )
 
   if (length(draft_sections) > 0) {
@@ -191,7 +199,76 @@ rg_qc <- function(project_path, guide_type = c("adrg", "csdrg"), level = c("basi
 
   report <- dplyr::bind_rows(rows)
   if (write) {
+    rg_write_csv(report, fs::path(project_path, "work", "qc", paste0(guide_type, "_qc_report.csv")))
     rg_write_csv(report, fs::path(project_path, "work", "qc", "qc_report.csv"))
   }
   report
+}
+
+rg_qc_summary_status <- function(error_fail_rows, warning_fail_rows) {
+  if (error_fail_rows > 0) {
+    return("fail")
+  }
+  if (warning_fail_rows > 0) {
+    return("review")
+  }
+  "pass"
+}
+
+rg_update_combined_qc_summary <- function(project_path, summary_row) {
+  combined_path <- fs::path(project_path, "work", "qc", "qc_summary.csv")
+  combined <- rg_read_csv_if_exists(combined_path, rg_qc_summary_columns())
+  if (nrow(combined) == 0) {
+    combined <- summary_row
+  } else {
+    combined <- combined[combined$guide_type != summary_row$guide_type[[1]], , drop = FALSE]
+    combined <- dplyr::bind_rows(combined, summary_row)
+  }
+  rg_write_csv(combined, combined_path)
+  invisible(combined_path)
+}
+
+rg_qc_summary <- function(project_path, guide_type = c("adrg", "csdrg"), qc = NULL, write = TRUE) {
+  guide_type <- match.arg(guide_type)
+  project_path <- rg_norm_path(project_path)
+  if (is.null(qc)) {
+    report_path <- fs::path(project_path, "work", "qc", paste0(guide_type, "_qc_report.csv"))
+    if (!fs::file_exists(report_path)) {
+      report_path <- fs::path(project_path, "work", "qc", "qc_report.csv")
+    }
+    qc <- rg_read_csv_if_exists(report_path, c(
+      "check_id", "guide_type", "severity", "status", "message",
+      "object_type", "object_id"
+    ))
+  }
+  if (nrow(qc) > 0 && "guide_type" %in% names(qc)) {
+    qc <- qc[qc$guide_type == guide_type, , drop = FALSE]
+  }
+  failed <- qc$status == "fail"
+  warning_fail_rows <- sum(failed & qc$severity == "warning", na.rm = TRUE)
+  error_fail_rows <- sum(failed & qc$severity == "error", na.rm = TRUE)
+  review_required <- failed & (
+    qc$severity %in% c("warning", "error") |
+      grepl("needs_review|unsupported|validation|manifest", qc$check_id %||% "", ignore.case = TRUE)
+  )
+  summary <- tibble::tibble(
+    guide_type = guide_type,
+    summary_status = rg_qc_summary_status(error_fail_rows, warning_fail_rows),
+    total_rows = nrow(qc),
+    pass_rows = sum(qc$status == "pass", na.rm = TRUE),
+    fail_rows = sum(failed, na.rm = TRUE),
+    info_rows = sum(qc$severity == "info", na.rm = TRUE),
+    warning_rows = sum(qc$severity == "warning", na.rm = TRUE),
+    error_rows = sum(qc$severity == "error", na.rm = TRUE),
+    warning_fail_rows = warning_fail_rows,
+    error_fail_rows = error_fail_rows,
+    review_required_rows = sum(review_required, na.rm = TRUE),
+    manifest_drift_rows = sum(qc$check_id == "manifest_hashes" & failed, na.rm = TRUE),
+    missing_evidence_rows = sum(grepl("^section_evidence_", qc$check_id %||% "") & failed, na.rm = TRUE)
+  )
+  if (write) {
+    rg_write_csv(summary, fs::path(project_path, "work", "qc", paste0(guide_type, "_qc_summary.csv")))
+    rg_update_combined_qc_summary(project_path, summary)
+  }
+  summary
 }

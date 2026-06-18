@@ -10,6 +10,8 @@ rg_extract_metadata(project_path, write = TRUE)
 }
 \description{
 Read the project manifest, extract define.xml and validation metadata, and write
-standard files under \code{work/extracted/} and \code{work/evidence/}.
+standard files under \code{work/extracted/} and \code{work/evidence/},
+including limited ValueListDef/WhereClauseDef rows in
+\code{define_valuelevel.csv}.
 }
 \value{A list of extracted metadata tibbles.}

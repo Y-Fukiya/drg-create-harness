@@ -7,10 +7,14 @@ test_that("rg_extract_define extracts datasets, variables, codelists, and method
   expect_true("SAFFL" %in% result$define_variables$variable_name)
   expect_true("CL.NY" %in% result$define_codelists$codelist_oid)
   expect_true("MT.SAFFL" %in% result$define_methods$method_oid)
+  expect_s3_class(result$define_valuelevel, "tbl_df")
   expect_true(all(nzchar(result$define_datasets$evidence_id)))
   expect_true(any(grepl("^ValueListDef\\[", result$evidence_table$locator)))
   expect_true(any(grepl("^WhereClauseDef\\[", result$evidence_table$locator)))
-  expect_true(any(result$evidence_table$needs_human_review))
+  expect_true(any(!is.na(result$define_valuelevel$value_list_oid)))
+  expect_true(any(!is.na(result$define_valuelevel$where_clause_oid)))
+  complex_evidence <- result$evidence_table[grepl("^(ValueListDef|WhereClauseDef)\\[", result$evidence_table$locator), ]
+  expect_false(any(complex_evidence$needs_human_review))
 })
 
 test_that("rg_extract_define handles prefixed define.xml metadata elements", {

@@ -12,7 +12,8 @@ rg_render_docx(project_path, guide_type = c("adrg", "csdrg"), template = NULL, o
 }
 \description{
 Render section headings, section text, dataset inventory tables, and validation
-finding tables to DOCX using officer and flextable. PDF conversion is out of
-scope.
+finding tables to DOCX using officer and flextable. When available, value-level
+define metadata and a compact QC summary table are appended to the draft. PDF
+conversion is out of scope.
 }
 \value{Invisibly returns the output DOCX path.}
