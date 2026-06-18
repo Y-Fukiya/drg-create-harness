@@ -1,7 +1,8 @@
-^\\.Rproj\\.user$
-^\\.Rhistory$
-^\\.RData$
-^\\.Ruserdata$
-^\\.\\.Rcheck$
-^.*\\.Rcheck$
-^.*\\.tar\\.gz$
+^\.Rproj\.user$
+^\.Rhistory$
+^\.RData$
+^\.Ruserdata$
+^\.\.Rcheck$
+^.*\.Rcheck$
+^.*\.tar\.gz$
+^\.github$

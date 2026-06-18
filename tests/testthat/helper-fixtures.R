@@ -33,6 +33,29 @@ copy_synthetic_sources <- function(project_path) {
   )
 }
 
+copy_anonymous_sources <- function(project_path) {
+  file.copy(
+    rg_fixture("extdata", "anonymous_study", "source", "analysis", "define.xml"),
+    file.path(project_path, "source", "analysis", "define.xml"),
+    overwrite = TRUE
+  )
+  file.copy(
+    rg_fixture("extdata", "anonymous_study", "source", "analysis", "validation", "adam_validation.csv"),
+    file.path(project_path, "source", "analysis", "validation", "adam_validation.csv"),
+    overwrite = TRUE
+  )
+  file.copy(
+    rg_fixture("extdata", "anonymous_study", "source", "tabulation", "define.xml"),
+    file.path(project_path, "source", "tabulation", "define.xml"),
+    overwrite = TRUE
+  )
+  file.copy(
+    rg_fixture("extdata", "anonymous_study", "source", "tabulation", "validation", "sdtm_validation.csv"),
+    file.path(project_path, "source", "tabulation", "validation", "sdtm_validation.csv"),
+    overwrite = TRUE
+  )
+}
+
 xml_escape <- function(x) {
   x <- gsub("&", "&amp;", x, fixed = TRUE)
   x <- gsub("<", "&lt;", x, fixed = TRUE)

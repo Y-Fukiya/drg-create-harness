@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odm:ODM xmlns:odm="http://www.cdisc.org/ns/odm/v1.3"
+         xmlns:def="http://www.cdisc.org/ns/def/v2.1"
+         xmlns:xlink="http://www.w3.org/1999/xlink">
+  <odm:Study OID="ANON-ADAM">
+    <odm:GlobalVariables>
+      <odm:StudyName>ANON-101</odm:StudyName>
+      <odm:StudyDescription>Anonymous phase 2 study fixture</odm:StudyDescription>
+      <odm:ProtocolName>ANON-101</odm:ProtocolName>
+    </odm:GlobalVariables>
+    <odm:MetaDataVersion OID="MDV.ANON.ADAM" Name="Anonymous ADaM metadata" def:DefineVersion="2.1.0">
+      <def:ItemGroupDef OID="IG.ADSL" Name="ADSL" Label="Subject-Level Analysis Dataset"
+                        Purpose="Analysis" Repeating="No" IsReferenceData="No"
+                        def:Structure="One record per subject" def:Class="ADSL">
+        <def:leaf ID="LF.ADSL" xlink:href="adsl.xpt"><def:title>adsl.xpt</def:title></def:leaf>
+        <odm:ItemRef ItemOID="IT.ADSL.STUDYID" Mandatory="Yes" KeySequence="1"/>
+        <odm:ItemRef ItemOID="IT.ADSL.USUBJID" Mandatory="Yes" KeySequence="2"/>
+        <odm:ItemRef ItemOID="IT.ADSL.TRT01P" Mandatory="Yes"/>
+        <odm:ItemRef ItemOID="IT.ADSL.SAFFL" Mandatory="Yes" MethodOID="MT.SAFFL"/>
+      </def:ItemGroupDef>
+      <def:ItemGroupDef OID="IG.ADEFF" Name="ADEFF" Label="Efficacy Analysis Dataset"
+                        Purpose="Analysis" Repeating="Yes" IsReferenceData="No"
+                        def:Structure="One record per subject per parameter per visit" def:Class="BDS">
+        <def:leaf ID="LF.ADEFF" xlink:href="adeff.xpt"><def:title>adeff.xpt</def:title></def:leaf>
+        <odm:ItemRef ItemOID="IT.ADEFF.STUDYID" Mandatory="Yes" KeySequence="1"/>
+        <odm:ItemRef ItemOID="IT.ADEFF.USUBJID" Mandatory="Yes" KeySequence="2"/>
+        <odm:ItemRef ItemOID="IT.ADEFF.PARAMCD" Mandatory="Yes" KeySequence="3"/>
+        <odm:ItemRef ItemOID="IT.ADEFF.AVAL" Mandatory="Yes" MethodOID="MT.AVAL"/>
+      </def:ItemGroupDef>
+      <odm:ItemDef OID="IT.ADSL.STUDYID" Name="STUDYID" Label="Study Identifier" DataType="text" Length="20">
+        <def:Origin Type="Assigned"/>
+      </odm:ItemDef>
+      <odm:ItemDef OID="IT.ADSL.USUBJID" Name="USUBJID" Label="Unique Subject Identifier" DataType="text" Length="40">
+        <def:Origin Type="Predecessor"/>
+      </odm:ItemDef>
+      <odm:ItemDef OID="IT.ADSL.TRT01P" Name="TRT01P" Label="Planned Treatment for Period 01" DataType="text" Length="40">
+        <odm:CodeListRef CodeListOID="CL.TRT"/>
+      </odm:ItemDef>
+      <odm:ItemDef OID="IT.ADSL.SAFFL" Name="SAFFL" Label="Safety Population Flag" DataType="text" Length="1">
+        <odm:CodeListRef CodeListOID="CL.NY"/>
+      </odm:ItemDef>
+      <odm:ItemDef OID="IT.ADEFF.STUDYID" Name="STUDYID" Label="Study Identifier" DataType="text" Length="20"/>
+      <odm:ItemDef OID="IT.ADEFF.USUBJID" Name="USUBJID" Label="Unique Subject Identifier" DataType="text" Length="40"/>
+      <odm:ItemDef OID="IT.ADEFF.PARAMCD" Name="PARAMCD" Label="Parameter Code" DataType="text" Length="8">
+        <odm:CodeListRef CodeListOID="CL.PARAM"/>
+      </odm:ItemDef>
+      <odm:ItemDef OID="IT.ADEFF.AVAL" Name="AVAL" Label="Analysis Value" DataType="float" def:DisplayFormat="8.2">
+        <def:Origin Type="Derived"/>
+      </odm:ItemDef>
+      <odm:CodeList OID="CL.NY" Name="No Yes Response" DataType="text">
+        <odm:CodeListItem CodedValue="N"><odm:Decode><odm:TranslatedText xml:lang="en">No</odm:TranslatedText></odm:Decode></odm:CodeListItem>
+        <odm:CodeListItem CodedValue="Y"><odm:Decode><odm:TranslatedText xml:lang="en">Yes</odm:TranslatedText></odm:Decode></odm:CodeListItem>
+      </odm:CodeList>
+      <odm:CodeList OID="CL.TRT" Name="Anonymous Treatments" DataType="text">
+        <odm:CodeListItem CodedValue="PLACEBO"><odm:Decode><odm:TranslatedText xml:lang="en">Placebo</odm:TranslatedText></odm:Decode></odm:CodeListItem>
+        <odm:CodeListItem CodedValue="ACTIVE"><odm:Decode><odm:TranslatedText xml:lang="en">Active</odm:TranslatedText></odm:Decode></odm:CodeListItem>
+      </odm:CodeList>
+      <odm:CodeList OID="CL.PARAM" Name="Efficacy Parameters" DataType="text">
+        <odm:CodeListItem CodedValue="RESP"><odm:Decode><odm:TranslatedText xml:lang="en">Response</odm:TranslatedText></odm:Decode></odm:CodeListItem>
+        <odm:CodeListItem CodedValue="CHG"><odm:Decode><odm:TranslatedText xml:lang="en">Change from Baseline</odm:TranslatedText></odm:Decode></odm:CodeListItem>
+      </odm:CodeList>
+      <def:MethodDef OID="MT.SAFFL" Name="Safety flag derivation" Type="Computation">
+        <odm:Description><odm:TranslatedText xml:lang="en">Set to Y for subjects who received any study treatment.</odm:TranslatedText></odm:Description>
+      </def:MethodDef>
+      <def:MethodDef OID="MT.AVAL" Name="Analysis value derivation" Type="Computation">
+        <odm:Description><odm:TranslatedText xml:lang="en">Derive the analysis value from the source endpoint according to SAP rules.</odm:TranslatedText></odm:Description>
+      </def:MethodDef>
+      <def:ValueListDef OID="VL.ADEFF.AVAL">
+        <odm:ItemRef ItemOID="IT.ADEFF.AVAL" Mandatory="No"/>
+      </def:ValueListDef>
+      <def:WhereClauseDef OID="WC.ADEFF.RESP">
+        <odm:RangeCheck SoftHard="Soft" def:ItemOID="IT.ADEFF.PARAMCD" Comparator="EQ">
+          <odm:CheckValue>RESP</odm:CheckValue>
+        </odm:RangeCheck>
+      </def:WhereClauseDef>
+    </odm:MetaDataVersion>
+  </odm:Study>
+</odm:ODM>

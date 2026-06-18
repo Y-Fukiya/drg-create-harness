@@ -1,0 +1,2 @@
+Rule,Level,Domain,Column,Issue,Occurrences,Response,State,Tool,Version,Standard,Standard Version
+SDTM-001,Warning,LB,LBTESTCD,Lab test code mapping requires sponsor explanation,3,Will be explained in cSDRG,Open,Pinnacle 21 Enterprise,5.0,SDTM,1.8

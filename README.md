@@ -9,6 +9,12 @@ produce submission-ready reviewer guides without human review.
 
 ## Minimal example
 
+Install from a local checkout:
+
+```r
+install.packages("/path/to/reviewerguideR", repos = NULL, type = "source")
+```
+
 ```r
 library(reviewerguideR)
 
@@ -29,6 +35,11 @@ For a runnable package-bundled example with synthetic fixtures:
 source(system.file("examples", "synthetic-e2e.R", package = "reviewerguideR"))
 result$docx
 ```
+
+See `docs/release-checklist.md` for the local release checks and
+`docs/post-mvp-roadmap.md` for the deferred ellmer, ragnar, iADRG/icSDRG,
+GraphRAG, Tauri, and shinylive direction. See `docs/github-publish.md` before
+publishing the repository to GitHub.
 
 ## Scope
 
@@ -87,3 +98,9 @@ points. shinylive is reserved for demos or UI prototypes rather than production
 processing. If the workflow becomes an app, the intended direction is Tauri with
 a local R sidecar; heavier `officer`, `flextable`, `ellmer`, and `ragnar` work
 should stay in that local R process.
+
+## CI
+
+The repository includes a GitHub Actions workflow at
+`.github/workflows/R-CMD-check.yaml` that runs R CMD check on pushes and pull
+requests to `master` or `main`.
