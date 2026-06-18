@@ -1,6 +1,6 @@
 Package: reviewerguideR
 Title: ADRG and cSDRG Draft Creation Harness
-Version: 0.0.0.9000
+Version: 0.1.0
 Authors@R: c(
     person(given = "Yoshihiro", family = "Fukiya", role = c("aut", "cre"), email = "yoshihiro.fukiya@gmail.com")
   )

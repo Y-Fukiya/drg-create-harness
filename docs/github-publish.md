@@ -34,7 +34,7 @@ Run locally before publishing:
 ```sh
 Rscript -e 'testthat::test_local(reporter = "summary")'
 R CMD build .
-_R_CHECK_FORCE_SUGGESTS_=false R CMD check --no-manual --no-build-vignettes reviewerguideR_0.0.0.9000.tar.gz
+_R_CHECK_FORCE_SUGGESTS_=false R CMD check --no-manual --no-build-vignettes reviewerguideR_0.1.0.tar.gz
 ```
 
 Run a harness example:
@@ -54,7 +54,7 @@ After the PR is merged to `main`:
 ```sh
 git switch main
 git pull
-git tag v0.1.0
+git tag -a v0.1.0 -m "reviewerguideR MVP harness release"
 git push origin v0.1.0
 ```
 

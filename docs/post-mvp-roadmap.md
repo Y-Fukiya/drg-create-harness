@@ -5,8 +5,8 @@ scope.
 
 ## Versioning
 
-- Current development version: `0.0.0.9000`.
-- First public MVP tag target: `0.1.0`.
+- Current public MVP version: `0.1.0`.
+- Next development version after release should return to a `.9000` suffix.
 - Patch releases should preserve existing public function signatures unless a
   breaking change is explicitly called out.
 
