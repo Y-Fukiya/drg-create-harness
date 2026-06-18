@@ -1,6 +1,12 @@
 rg_section_spec_path <- function(guide_type) {
   file <- system.file("section_specs", paste0(guide_type, ".yml"), package = "reviewerguideR")
   if (!nzchar(file)) {
+    root <- getOption("reviewerguideR.repo_root", default = NULL)
+    if (!is.null(root)) {
+      file <- fs::path(root, "inst", "section_specs", paste0(guide_type, ".yml"))
+    }
+  }
+  if (!nzchar(file)) {
     file <- fs::path("inst", "section_specs", paste0(guide_type, ".yml"))
   }
   if (!fs::file_exists(file)) {

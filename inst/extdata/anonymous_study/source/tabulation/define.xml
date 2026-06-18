@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odm:ODM xmlns:odm="http://www.cdisc.org/ns/odm/v1.3"
+         xmlns:def="http://www.cdisc.org/ns/def/v2.1"
+         xmlns:xlink="http://www.w3.org/1999/xlink">
+  <odm:Study OID="ANON-SDTM">
+    <odm:GlobalVariables>
+      <odm:StudyName>ANON-101</odm:StudyName>
+    </odm:GlobalVariables>
+    <odm:MetaDataVersion OID="MDV.ANON.SDTM" Name="Anonymous SDTM metadata" def:DefineVersion="2.1.0">
+      <def:ItemGroupDef OID="IG.DM" Name="DM" Label="Demographics" Purpose="Tabulation"
+                        Repeating="No" IsReferenceData="No" def:Structure="One record per subject" def:Class="SPECIAL PURPOSE">
+        <def:leaf ID="LF.DM" xlink:href="dm.xpt"><def:title>dm.xpt</def:title></def:leaf>
+        <odm:ItemRef ItemOID="IT.DM.STUDYID" Mandatory="Yes" KeySequence="1"/>
+        <odm:ItemRef ItemOID="IT.DM.USUBJID" Mandatory="Yes" KeySequence="2"/>
+        <odm:ItemRef ItemOID="IT.DM.SEX" Mandatory="Yes"/>
+      </def:ItemGroupDef>
+      <def:ItemGroupDef OID="IG.LB" Name="LB" Label="Laboratory Test Results" Purpose="Tabulation"
+                        Repeating="Yes" IsReferenceData="No" def:Structure="One record per lab test per time point" def:Class="FINDINGS">
+        <def:leaf ID="LF.LB" xlink:href="lb.xpt"><def:title>lb.xpt</def:title></def:leaf>
+        <odm:ItemRef ItemOID="IT.LB.STUDYID" Mandatory="Yes" KeySequence="1"/>
+        <odm:ItemRef ItemOID="IT.LB.USUBJID" Mandatory="Yes" KeySequence="2"/>
+        <odm:ItemRef ItemOID="IT.LB.LBTESTCD" Mandatory="Yes" MethodOID="MT.LBTESTCD"/>
+      </def:ItemGroupDef>
+      <odm:ItemDef OID="IT.DM.STUDYID" Name="STUDYID" Label="Study Identifier" DataType="text" Length="20"/>
+      <odm:ItemDef OID="IT.DM.USUBJID" Name="USUBJID" Label="Unique Subject Identifier" DataType="text" Length="40"/>
+      <odm:ItemDef OID="IT.DM.SEX" Name="SEX" Label="Sex" DataType="text" Length="1"><odm:CodeListRef CodeListOID="CL.SEX"/></odm:ItemDef>
+      <odm:ItemDef OID="IT.LB.STUDYID" Name="STUDYID" Label="Study Identifier" DataType="text" Length="20"/>
+      <odm:ItemDef OID="IT.LB.USUBJID" Name="USUBJID" Label="Unique Subject Identifier" DataType="text" Length="40"/>
+      <odm:ItemDef OID="IT.LB.LBTESTCD" Name="LBTESTCD" Label="Lab Test Short Name" DataType="text" Length="8"/>
+      <odm:CodeList OID="CL.SEX" Name="Sex" DataType="text">
+        <odm:CodeListItem CodedValue="F"><odm:Decode><odm:TranslatedText xml:lang="en">Female</odm:TranslatedText></odm:Decode></odm:CodeListItem>
+        <odm:CodeListItem CodedValue="M"><odm:Decode><odm:TranslatedText xml:lang="en">Male</odm:TranslatedText></odm:Decode></odm:CodeListItem>
+      </odm:CodeList>
+      <def:MethodDef OID="MT.LBTESTCD" Name="Lab test mapping" Type="Computation">
+        <def:FormalExpression Context="SAS">LBTESTCD = upcase(source_test_code)</def:FormalExpression>
+      </def:MethodDef>
+    </odm:MetaDataVersion>
+  </odm:Study>
+</odm:ODM>

@@ -1,13 +1,91 @@
-# reviewerguideR
+# Reviewer Guide Draft Harness
 
-`reviewerguideR` is an MVP R package for creating basic ADRG and cSDRG draft
+This repository is a local harness for creating basic ADRG and cSDRG draft
 reviewer guides from structured metadata, especially `define.xml` and
 validation finding CSV/XLSX files.
 
-The package creates evidence-bound drafts and DOCX output. It is not intended to
-produce submission-ready reviewer guides without human review.
+The R package code is the engine. The intended user-facing workflow is to place
+study inputs under a harness project `source/` directory and run one command to
+generate `work/` artifacts, QC rows, and DOCX drafts.
 
-## Minimal example
+Generated documents are evidence-bound drafts. They are not submission-ready
+reviewer guides without human review.
+
+## Public Data Notice
+
+This repository contains only synthetic and anonymous fixtures under
+`inst/extdata/`. Do not commit real study data, subject-level datasets, sponsor
+documents, protocol PDFs, SAPs, CSRs, aCRFs, API keys, or generated study
+projects. Local `studies/` and `.harness/` directories are ignored by git and by
+R package builds for that reason.
+
+## Harness Quick Start
+
+Create a study project:
+
+```bash
+make init PROJECT=studies/ABC-001 STUDY_ID=ABC-001
+```
+
+Copy study inputs into the generated project:
+
+```text
+studies/ABC-001/source/analysis/define.xml
+studies/ABC-001/source/analysis/validation/*.csv
+studies/ABC-001/source/tabulation/define.xml
+studies/ABC-001/source/tabulation/validation/*.csv
+```
+
+Generate both draft guides:
+
+```bash
+make run PROJECT=studies/ABC-001 GUIDE=both
+```
+
+Outputs are written to:
+
+```text
+studies/ABC-001/output/adrg_draft.docx
+studies/ABC-001/output/csdrg_draft.docx
+studies/ABC-001/output/harness_summary.json
+```
+
+Run the bundled anonymous example:
+
+```bash
+make run-example PROJECT=.harness/rg-harness-demo EXAMPLE=anonymous
+```
+
+The same flow is available without `make`:
+
+```bash
+Rscript scripts/run_harness.R --project studies/ABC-001 --study-id ABC-001 --guide both
+```
+
+On Windows PowerShell:
+
+```powershell
+.\scripts\run_harness.ps1 -Project .\studies\ABC-001 -StudyId ABC-001 -Init -NoRun
+.\scripts\run_harness.ps1 -Project .\studies\ABC-001 -Guide both
+.\scripts\run_harness.ps1 -Project .\.harness\rg-demo -CopyExample anonymous
+```
+
+On Windows Command Prompt:
+
+```bat
+scripts\run_harness.cmd --project studies\ABC-001 --study-id ABC-001 --guide both
+```
+
+See `harness/README.md` for the full harness directory contract and CLI options.
+
+See `docs/release-checklist.md` for the local release checks and
+`docs/post-mvp-roadmap.md` for the deferred ellmer, ragnar, iADRG/icSDRG,
+GraphRAG, Tauri, and shinylive direction. See `docs/github-publish.md` before
+publishing the repository to GitHub.
+
+## R Engine Example
+
+For direct package-level use:
 
 ```r
 library(reviewerguideR)
@@ -41,7 +119,9 @@ metadata but does not expand them in the MVP. When those constructs are present,
 QC reports them as `severity = "warning"` and `status = "fail"` so document
 generation can continue while human reviewers still see the gap. The same gap is
 also summarized in the draft guide's unresolved items section, whose
-`evidence_ids` are limited to the unresolved items mentioned in that section.
+`evidence_ids` are limited to the unresolved items mentioned in that section
+when gaps are present. If no gap is detected, the section carries source
+metadata evidence supporting that no-gap statement.
 
 QC output is intentionally row-oriented in the MVP. It does not add an overall
 status column yet; a separate summary helper can be added later when CI or
@@ -74,4 +154,13 @@ excluded from LLM and RAG eligibility by the source scanner.
 
 GraphRAG, iADRG/icSDRG, Tauri, shinylive production packaging, and PDF
 conversion are future work. Stable stubs are included for those extension
-points.
+points. shinylive is reserved for demos or UI prototypes rather than production
+processing. If the workflow becomes an app, the intended direction is Tauri with
+a local R sidecar; heavier `officer`, `flextable`, `ellmer`, and `ragnar` work
+should stay in that local R process.
+
+## CI
+
+The repository includes a GitHub Actions workflow at
+`.github/workflows/R-CMD-check.yaml` that runs R CMD check on pushes and pull
+requests to `master` or `main` on Ubuntu and Windows.

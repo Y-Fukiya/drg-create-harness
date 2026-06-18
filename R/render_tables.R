@@ -6,3 +6,11 @@ rg_compact_table <- function(x, columns, max_rows = 25) {
   dplyr::select(x, dplyr::all_of(columns)) |>
     utils::head(max_rows)
 }
+
+rg_flextable <- function(x) {
+  flextable::flextable(x) |>
+    flextable::theme_booktabs() |>
+    flextable::fontsize(size = 9, part = "all") |>
+    flextable::bold(part = "header") |>
+    flextable::autofit()
+}

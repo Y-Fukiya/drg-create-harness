@@ -1,16 +1,18 @@
 Package: reviewerguideR
 Title: ADRG and cSDRG Draft Creation Harness
-Version: 0.0.0.9000
+Version: 0.1.0
 Authors@R: c(
-    person(given = "reviewerguideR", family = "contributors", role = c("aut", "cre"), email = "noreply@example.com")
+    person(given = "Yoshihiro", family = "Fukiya", role = c("aut", "cre"), email = "yoshihiro.fukiya@gmail.com")
   )
-Author: reviewerguideR contributors
-Maintainer: reviewerguideR contributors <noreply@example.com>
+Author: Yoshihiro Fukiya
+Maintainer: Yoshihiro Fukiya <yoshihiro.fukiya@gmail.com>
 Description: Creates basic ADRG and cSDRG draft reviewer guides from structured
     metadata such as define.xml and validation finding files. The MVP is
     evidence-bound, deterministic in dry-run mode, and avoids external LLM or
     embedding calls during automated tests.
 License: MIT + file LICENSE
+URL: https://github.com/Y-Fukiya/drg-create-harness
+BugReports: https://github.com/Y-Fukiya/drg-create-harness/issues
 Encoding: UTF-8
 Depends:
     R (>= 4.1.0)

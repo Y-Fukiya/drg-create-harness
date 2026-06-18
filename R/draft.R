@@ -40,7 +40,11 @@ rg_unresolved_evidence_ids <- function(data) {
   }
   unsupported_ids <- rg_unsupported_define_evidence(data) |>
     dplyr::pull("evidence_id")
-  rg_section_evidence(tbd_dataset_ids, unsupported_ids)
+  unresolved_ids <- rg_section_evidence(tbd_dataset_ids, unsupported_ids)
+  if (length(unresolved_ids) > 0) {
+    return(unresolved_ids)
+  }
+  rg_section_evidence(data$define_datasets$evidence_id, data$validation_findings$evidence_id, limit = 25)
 }
 
 rg_draft_text_for_section <- function(section_id, title, guide_type, study_id, data) {

@@ -4,3 +4,5 @@
 .Rhistory
 .RData
 .Rproj.user/
+.harness/
+studies/

@@ -1,0 +1,3 @@
+Check ID,Severity Level,Dataset Name,Variable Name,Description,Record Count,Sponsor Comment,Disposition,Validator,Validator Version,Standard Name,Model Version
+ADAM-001,Warning,ADEFF,AVAL,Analysis value precision should be reviewed,4,Will be explained in ADRG,Open,Pinnacle 21 Enterprise,5.0,ADaM,1.3
+ADAM-002,Notice,ADSL,TRT01P,Treatment label differs from controlled terminology,2,Anonymous fixture example,Open,Pinnacle 21 Enterprise,5.0,ADaM,1.3

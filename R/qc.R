@@ -18,12 +18,33 @@ rg_qc_row <- function(check_id, guide_type, severity, status, message, object_ty
   )
 }
 
+rg_qc_dataset_tokens <- function(draft_sections, dataset_names, study_id = NA_character_) {
+  target_sections <- draft_sections[vapply(draft_sections, function(section) {
+    grepl("data_standards|dataset_inventory", section$section_id %||% "")
+  }, logical(1))]
+  if (length(target_sections) == 0) {
+    return(character())
+  }
+  text <- paste(vapply(target_sections, function(section) section$draft_markdown %||% "", character(1)), collapse = " ")
+  matches <- gregexpr("\\b[A-Z][A-Z0-9_]{1,7}\\b", text, perl = TRUE)
+  tokens <- unique(unlist(regmatches(text, matches), use.names = FALSE))
+  tokens <- tokens[nzchar(tokens)]
+  excluded <- c(
+    "ADAM", "SDTM", "ADRG", "CSDRG", "TBD", "CSV", "XLSX", "DOCX", "PDF",
+    "LLM", "RAG", "QC", "API", "OID", "ID", "MVP", "XML", "JSON", "URL",
+    unlist(strsplit(toupper(study_id %||% ""), "[^A-Z0-9_]+"))
+  )
+  setdiff(tokens, c(toupper(stats::na.omit(dataset_names)), excluded))
+}
+
 rg_qc <- function(project_path, guide_type = c("adrg", "csdrg"), level = c("basic", "strict"), write = TRUE) {
   guide_type <- match.arg(guide_type)
   level <- match.arg(level)
   project_path <- rg_norm_path(project_path)
   spec <- rg_read_section_spec(guide_type)
   data <- rg_filter_for_guide(rg_load_extracted(project_path), guide_type)
+  config <- rg_read_config(project_path)
+  study_id <- rg_config_value(config, c("study", "study_id"), default = NA_character_)
   draft <- rg_read_draft(project_path, guide_type)
   rows <- list()
 
@@ -55,6 +76,39 @@ rg_qc <- function(project_path, guide_type = c("adrg", "csdrg"), level = c("basi
     if (has_datasets) "pass" else "fail",
     if (has_datasets) "Dataset inventory was extracted." else "Dataset inventory is empty.",
     "define_datasets", NA_character_
+  )
+
+  dataset_names <- unique(stats::na.omit(data$define_datasets$dataset_name))
+  unknown_draft_datasets <- if (length(draft_sections) == 0) {
+    character()
+  } else {
+    rg_qc_dataset_tokens(draft_sections, dataset_names, study_id = study_id)
+  }
+  rows[[length(rows) + 1]] <- rg_qc_row(
+    "draft_dataset_mentions_defined", guide_type,
+    if (length(unknown_draft_datasets) == 0) "info" else "warning",
+    if (length(unknown_draft_datasets) == 0) "pass" else "fail",
+    if (length(unknown_draft_datasets) == 0) {
+      "Dataset-like names in draft inventory sections are present in define_datasets."
+    } else {
+      paste("Draft inventory sections mention dataset-like names not found in define_datasets:", paste(unknown_draft_datasets, collapse = ", "))
+    },
+    "section", paste(unknown_draft_datasets, collapse = ", ")
+  )
+
+  validation_dataset_names <- unique(stats::na.omit(data$validation_findings$dataset_name))
+  validation_dataset_names <- validation_dataset_names[nzchar(validation_dataset_names)]
+  unknown_validation_datasets <- setdiff(toupper(validation_dataset_names), toupper(dataset_names))
+  rows[[length(rows) + 1]] <- rg_qc_row(
+    "validation_datasets_defined", guide_type,
+    if (length(unknown_validation_datasets) == 0) "info" else "warning",
+    if (length(unknown_validation_datasets) == 0) "pass" else "fail",
+    if (length(unknown_validation_datasets) == 0) {
+      "Validation finding dataset names are present in define_datasets."
+    } else {
+      paste("Validation findings reference dataset names not found in define_datasets:", paste(unknown_validation_datasets, collapse = ", "))
+    },
+    "validation_findings", paste(unknown_validation_datasets, collapse = ", ")
   )
 
   unsupported_define <- data$evidence_table |>
@@ -105,7 +159,12 @@ rg_qc <- function(project_path, guide_type = c("adrg", "csdrg"), level = c("basi
 
   finding_count <- nrow(data$validation_findings)
   conformance <- draft_sections[vapply(draft_sections, function(x) grepl("conformance", x$section_id %||% ""), logical(1))]
-  reflected <- finding_count == 0 || (length(conformance) > 0 && grepl(as.character(finding_count), conformance[[1]]$draft_markdown %||% ""))
+  conformance_text <- if (length(conformance) > 0) conformance[[1]]$draft_markdown %||% "" else ""
+  reflected <- if (finding_count == 0) {
+    length(conformance) > 0 && grepl("No validation findings|0 validation findings", conformance_text, ignore.case = TRUE)
+  } else {
+    length(conformance) > 0 && grepl(as.character(finding_count), conformance_text)
+  }
   rows[[length(rows) + 1]] <- rg_qc_row(
     "validation_reflected", guide_type,
     if (reflected) "info" else "warning",
