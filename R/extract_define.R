@@ -24,6 +24,14 @@ rg_xml_text_first <- function(node, xpath, default = NA_character_) {
   if (!nzchar(value)) default else value
 }
 
+rg_xpath_anywhere <- function(name) {
+  paste0(".//*[local-name()='", name, "']")
+}
+
+rg_xpath_child <- function(name) {
+  paste0("./*[local-name()='", name, "']")
+}
+
 rg_extract_define <- function(define_xml, study_id = NULL, data_class = c("auto", "sdtm", "adam", "unknown")) {
   data_class <- match.arg(data_class)
   source_define <- rg_norm_path(define_xml)
@@ -35,17 +43,17 @@ rg_extract_define <- function(define_xml, study_id = NULL, data_class = c("auto"
   doc <- xml2::xml_ns_strip(doc)
 
   if (is.null(study_id)) {
-    study_id <- rg_xml_attr_any(xml2::xml_find_first(doc, ".//GlobalVariables/StudyName"), "OID", NA_character_)
+    study_id <- rg_xml_attr_any(xml2::xml_find_first(doc, ".//*[local-name()='GlobalVariables']/*[local-name()='StudyName']"), "OID", NA_character_)
     if (is.na(study_id)) {
-      study_name <- rg_xml_text_first(doc, ".//StudyName", NA_character_)
+      study_name <- rg_xml_text_first(doc, rg_xpath_anywhere("StudyName"), NA_character_)
       study_id <- study_name %||% NA_character_
     }
   }
 
-  item_defs <- xml2::xml_find_all(doc, ".//ItemDef")
+  item_defs <- xml2::xml_find_all(doc, rg_xpath_anywhere("ItemDef"))
   names(item_defs) <- vapply(item_defs, rg_xml_attr_any, character(1), names = "OID")
 
-  dataset_nodes <- xml2::xml_find_all(doc, ".//ItemGroupDef")
+  dataset_nodes <- xml2::xml_find_all(doc, rg_xpath_anywhere("ItemGroupDef"))
   dataset_rows <- vector("list", length(dataset_nodes))
   variable_rows <- list()
   evidence_rows <- list()
@@ -55,9 +63,9 @@ rg_extract_define <- function(define_xml, study_id = NULL, data_class = c("auto"
     dataset_oid <- rg_xml_attr_any(node, "OID")
     dataset_name <- rg_xml_attr_any(node, "Name")
     dataset_label <- rg_xml_attr_any(node, "Label")
-    dataset_location <- rg_xml_attr_any(xml2::xml_find_first(node, ".//leaf"), c("href", "xlink:href"), NA_character_)
+    dataset_location <- rg_xml_attr_any(xml2::xml_find_first(node, rg_xpath_anywhere("leaf")), c("href", "xlink:href"), NA_character_)
     if (is.na(dataset_location)) {
-      dataset_location <- rg_xml_text_first(node, ".//leaf/title", NA_character_)
+      dataset_location <- rg_xml_text_first(node, ".//*[local-name()='leaf']/*[local-name()='title']", NA_character_)
     }
     evidence_id <- rg_make_evidence_id("DEFDS", source_define, dataset_oid, i)
     dataset_rows[[i]] <- tibble::tibble(
@@ -87,7 +95,7 @@ rg_extract_define <- function(define_xml, study_id = NULL, data_class = c("auto"
       confidence = 0.9
     )
 
-    refs <- xml2::xml_find_all(node, "./ItemRef")
+    refs <- xml2::xml_find_all(node, rg_xpath_child("ItemRef"))
     if (length(refs) > 0) {
       for (j in seq_along(refs)) {
         ref <- refs[[j]]
@@ -97,12 +105,12 @@ rg_extract_define <- function(define_xml, study_id = NULL, data_class = c("auto"
           item <- xml2::xml_missing()
         }
         codelist_ref <- if (!inherits(item, "xml_missing")) {
-          rg_xml_attr_any(xml2::xml_find_first(item, ".//CodeListRef"), "CodeListOID", NA_character_)
+          rg_xml_attr_any(xml2::xml_find_first(item, rg_xpath_anywhere("CodeListRef")), "CodeListOID", NA_character_)
         } else {
           NA_character_
         }
         origin <- if (!inherits(item, "xml_missing")) {
-          origin_node <- xml2::xml_find_first(item, ".//Origin")
+          origin_node <- xml2::xml_find_first(item, rg_xpath_anywhere("Origin"))
           if (inherits(origin_node, "xml_missing")) NA_character_ else rg_xml_attr_any(origin_node, "Type", xml2::xml_text(origin_node))
         } else {
           NA_character_
@@ -144,12 +152,12 @@ rg_extract_define <- function(define_xml, study_id = NULL, data_class = c("auto"
     }
   }
 
-  codelist_nodes <- xml2::xml_find_all(doc, ".//CodeList")
+  codelist_nodes <- xml2::xml_find_all(doc, rg_xpath_anywhere("CodeList"))
   codelist_rows <- list()
   for (i in seq_along(codelist_nodes)) {
     node <- codelist_nodes[[i]]
     codelist_oid <- rg_xml_attr_any(node, "OID")
-    item_nodes <- xml2::xml_find_all(node, "./CodeListItem|./EnumeratedItem")
+    item_nodes <- xml2::xml_find_all(node, "./*[local-name()='CodeListItem' or local-name()='EnumeratedItem']")
     if (length(item_nodes) == 0) {
       item_nodes <- list(xml2::xml_missing())
     }
@@ -159,7 +167,7 @@ rg_extract_define <- function(define_xml, study_id = NULL, data_class = c("auto"
       decode <- if (inherits(item, "xml_missing")) {
         NA_character_
       } else {
-        rg_xml_text_first(item, ".//Decode/TranslatedText", NA_character_)
+        rg_xml_text_first(item, ".//*[local-name()='Decode']/*[local-name()='TranslatedText']", NA_character_)
       }
       evidence_id <- rg_make_evidence_id("DEFCL", source_define, paste(codelist_oid, coded_value, sep = "/"), j)
       codelist_rows[[length(codelist_rows) + 1]] <- tibble::tibble(
@@ -186,14 +194,14 @@ rg_extract_define <- function(define_xml, study_id = NULL, data_class = c("auto"
     }
   }
 
-  method_nodes <- xml2::xml_find_all(doc, ".//MethodDef")
+  method_nodes <- xml2::xml_find_all(doc, rg_xpath_anywhere("MethodDef"))
   method_rows <- vector("list", length(method_nodes))
   for (i in seq_along(method_nodes)) {
     node <- method_nodes[[i]]
     method_oid <- rg_xml_attr_any(node, "OID")
-    method_text <- rg_xml_text_first(node, ".//Description/TranslatedText", NA_character_)
+    method_text <- rg_xml_text_first(node, ".//*[local-name()='Description']/*[local-name()='TranslatedText']", NA_character_)
     if (is.na(method_text)) {
-      method_text <- rg_xml_text_first(node, ".//FormalExpression", NA_character_)
+      method_text <- rg_xml_text_first(node, rg_xpath_anywhere("FormalExpression"), NA_character_)
     }
     if (is.na(method_text)) {
       method_text <- trimws(xml2::xml_text(node))
@@ -223,8 +231,8 @@ rg_extract_define <- function(define_xml, study_id = NULL, data_class = c("auto"
   }
 
   unsupported_define_nodes <- c(
-    as.list(xml2::xml_find_all(doc, ".//*[local-name()='ValueListDef']")),
-    as.list(xml2::xml_find_all(doc, ".//*[local-name()='WhereClauseDef']"))
+    as.list(xml2::xml_find_all(doc, rg_xpath_anywhere("ValueListDef"))),
+    as.list(xml2::xml_find_all(doc, rg_xpath_anywhere("WhereClauseDef")))
   )
   for (i in seq_along(unsupported_define_nodes)) {
     node <- unsupported_define_nodes[[i]]

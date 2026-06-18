@@ -43,3 +43,19 @@ test_that("rg_draft_guide auto-extracts only when extracted metadata is missing"
 
   expect_match(conformance$draft_markdown, "No validation findings were imported", fixed = TRUE)
 })
+
+test_that("rg_draft_guide supports cSDRG dry-run sections", {
+  proj <- tempfile("rg-project-")
+  rg_init_project(proj, study_id = "TEST-001")
+  copy_synthetic_sources(proj)
+  rg_scan_sources(proj)
+  rg_extract_metadata(proj)
+
+  draft <- rg_draft_guide(proj, guide_type = "csdrg", mode = "dry_run")
+
+  expect_equal(draft$guide_type, "csdrg")
+  expect_true(file.exists(file.path(proj, "work", "drafts", "csdrg_draft.json")))
+  section_ids <- vapply(draft$sections, function(x) x$section_id, character(1))
+  expect_true("sdtm_dataset_inventory" %in% section_ids)
+  expect_true(all(vapply(draft$sections, function(x) length(x$evidence_ids) > 0, logical(1))))
+})

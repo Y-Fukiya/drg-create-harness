@@ -56,3 +56,14 @@ test_that("built-in XLSX fallback rejects workbook features outside MVP scope", 
     fixed = TRUE
   )
 })
+
+test_that("rg_extract_validation rejects unsupported validation file formats", {
+  pdf <- tempfile(fileext = ".pdf")
+  writeLines("not a parsed validation report", pdf)
+
+  expect_error(
+    rg_extract_validation(pdf, study_id = "TEST-001"),
+    "supports only .csv and .xlsx",
+    fixed = TRUE
+  )
+})

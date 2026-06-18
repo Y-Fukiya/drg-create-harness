@@ -48,7 +48,9 @@ metadata but does not expand them in the MVP. When those constructs are present,
 QC reports them as `severity = "warning"` and `status = "fail"` so document
 generation can continue while human reviewers still see the gap. The same gap is
 also summarized in the draft guide's unresolved items section, whose
-`evidence_ids` are limited to the unresolved items mentioned in that section.
+`evidence_ids` are limited to the unresolved items mentioned in that section
+when gaps are present. If no gap is detected, the section carries source
+metadata evidence supporting that no-gap statement.
 
 QC output is intentionally row-oriented in the MVP. It does not add an overall
 status column yet; a separate summary helper can be added later when CI or
@@ -81,4 +83,7 @@ excluded from LLM and RAG eligibility by the source scanner.
 
 GraphRAG, iADRG/icSDRG, Tauri, shinylive production packaging, and PDF
 conversion are future work. Stable stubs are included for those extension
-points.
+points. shinylive is reserved for demos or UI prototypes rather than production
+processing. If the workflow becomes an app, the intended direction is Tauri with
+a local R sidecar; heavier `officer`, `flextable`, `ellmer`, and `ragnar` work
+should stay in that local R process.
