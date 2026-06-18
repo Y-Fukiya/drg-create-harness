@@ -43,7 +43,7 @@ Install required R packages from the repository root:
 ```r
 install.packages(c(
   "cli", "digest", "dplyr", "flextable", "fs", "glue", "jsonlite",
-  "officer", "purrr", "stringr", "tibble", "tidyr", "xml2", "yaml"
+  "officer", "purrr", "stringr", "tibble", "xml2", "yaml"
 ))
 ```
 
@@ -234,19 +234,22 @@ findings as flat CSV when those features are needed.
 Sheet selection is intentionally not exposed in the MVP; XLSX imports read the
 first sheet only.
 
-The `define.xml` parser extracts datasets, variables, codelists, methods,
-origin attributes, leaf locations, and a limited ValueListDef/WhereClauseDef
-view into `work/extracted/define_valuelevel.csv`. This value-level support is
-intentionally limited to ItemRef and RangeCheck metadata that can be represented
-as a flat table. More complex define.xml relationships still require human
-review.
+The `define.xml` parser extracts datasets, variables, codelists, external
+codelist dictionary/version attributes, methods, origin attributes and details,
+leaf locations, and a limited ValueListDef/WhereClauseDef view into
+`work/extracted/define_valuelevel.csv`. This value-level support is intentionally
+limited to ItemRef and RangeCheck metadata that can be represented as a flat
+table. More complex define.xml relationships are flagged as human-review items
+instead of being silently treated as fully supported.
 
 QC output includes both row-oriented reports and one-row summaries. The
 guide-specific reports are written as `work/qc/adrg_qc_report.csv` and
 `work/qc/csdrg_qc_report.csv`; the compatibility `work/qc/qc_report.csv`
 contains the latest guide run. Summary CSV files include `summary_status`,
 warning/error fail counts, review-required rows, manifest drift, and missing
-evidence counts.
+evidence counts. The `needs_human_review` signal is based on structural
+conditions such as TBD text, missing evidence, or unsupported metadata, not on
+boilerplate prose reminding users to review the draft.
 
 `rg_extract_metadata()` uses the existing `work/manifest.json` when present and
 does not automatically rescan source files. If no manifest exists yet, it runs

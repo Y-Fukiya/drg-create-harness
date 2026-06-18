@@ -16,6 +16,11 @@ rg_pick_col <- function(data, candidates) {
   data[[idx[[1]]]]
 }
 
+rg_parse_validation_count <- function(x) {
+  x <- gsub(",", "", as.character(x), fixed = TRUE)
+  suppressWarnings(as.integer(x))
+}
+
 rg_column_candidates <- function(x) {
   if (is.null(x)) {
     return(character())
@@ -71,6 +76,7 @@ rg_read_xlsx_first_sheet <- function(path) {
       )
     }
   }
+  # The fallback supports only a single worksheet and therefore reads sheet1.xml directly.
   sheet_path <- fs::path(tmp, "xl", "worksheets", "sheet1.xml")
   if (!fs::file_exists(sheet_path)) {
     stop("XLSX workbook does not contain xl/worksheets/sheet1.xml.", call. = FALSE)
@@ -144,7 +150,13 @@ rg_read_xlsx_first_sheet <- function(path) {
 rg_read_validation_table <- function(path) {
   ext <- tolower(fs::path_ext(path))
   if (identical(ext, "csv")) {
-    return(tibble::as_tibble(utils::read.csv(path, stringsAsFactors = FALSE, check.names = FALSE, na.strings = c("", "NA"))))
+    return(tibble::as_tibble(utils::read.csv(
+      path,
+      stringsAsFactors = FALSE,
+      check.names = FALSE,
+      na.strings = c("", "NA"),
+      colClasses = "character"
+    )))
   }
   if (identical(ext, "xlsx")) {
     if (requireNamespace("readxl", quietly = TRUE)) {
@@ -181,7 +193,7 @@ rg_extract_validation <- function(path, study_id = NULL, data_class = c("auto", 
     dataset_name = as.character(rg_pick_col(raw, mapping$dataset_name)),
     variable_name = as.character(rg_pick_col(raw, mapping$variable_name)),
     message = as.character(rg_pick_col(raw, mapping$message)),
-    count = suppressWarnings(as.integer(rg_pick_col(raw, mapping$count))),
+    count = rg_parse_validation_count(rg_pick_col(raw, mapping$count)),
     sponsor_explanation = as.character(rg_pick_col(raw, mapping$sponsor_explanation)),
     status = as.character(rg_pick_col(raw, mapping$status))
   )

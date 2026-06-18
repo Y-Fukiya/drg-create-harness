@@ -33,7 +33,8 @@ test_that("rg_qc_summary writes guide-level and combined summaries", {
   expect_equal(summary$guide_type, "adrg")
   expect_true(summary$total_rows > 0)
   expect_equal(summary$fail_rows, sum(report$status == "fail", na.rm = TRUE))
-  expect_true(summary$summary_status %in% c("pass", "review", "fail"))
+  expect_false(any(report$check_id == "needs_review_intro"))
+  expect_equal(summary$summary_status, "pass")
   expect_true(file.exists(file.path(proj, "work", "qc", "adrg_qc_report.csv")))
   expect_true(file.exists(file.path(proj, "work", "qc", "adrg_qc_summary.csv")))
   expect_true(file.exists(file.path(proj, "work", "qc", "qc_summary.csv")))
@@ -53,6 +54,29 @@ test_that("rg_qc reports extracted ValueListDef and WhereClauseDef metadata", {
   expect_equal(valuelevel$severity, "info")
   expect_equal(valuelevel$status, "pass")
   expect_match(valuelevel$message, "define_valuelevel.csv", fixed = TRUE)
+})
+
+test_that("rg_qc and draft unresolved items surface value-level metadata needing review", {
+  proj <- tempfile("rg-project-")
+  rg_init_project(proj, study_id = "TEST-001")
+  copy_synthetic_sources(proj)
+  rg_scan_sources(proj)
+  rg_extract_metadata(proj)
+
+  evidence_path <- file.path(proj, "work", "evidence", "evidence_table.csv")
+  evidence <- utils::read.csv(evidence_path, stringsAsFactors = FALSE, check.names = FALSE)
+  evidence$needs_human_review[grepl("^ValueListDef\\[", evidence$locator)] <- TRUE
+  utils::write.csv(evidence, evidence_path, row.names = FALSE, na = "")
+
+  draft <- rg_draft_guide(proj, guide_type = "adrg", mode = "dry_run")
+  report <- rg_qc(proj, guide_type = "adrg")
+  summary <- rg_qc_summary(proj, guide_type = "adrg", qc = report, write = FALSE)
+
+  unresolved <- draft$sections[[which(vapply(draft$sections, function(x) identical(x$section_id, "unresolved_items"), logical(1)))]]
+  expect_true(unresolved$needs_human_review)
+  expect_match(unresolved$draft_markdown, "ValueListDef/WhereClauseDef", fixed = TRUE)
+  expect_true(any(report$check_id == "define_valuelevel_metadata" & report$status == "fail"))
+  expect_equal(summary$summary_status, "review")
 })
 
 test_that("rg_qc checks draft and validation dataset names against define_datasets", {

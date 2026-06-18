@@ -23,6 +23,8 @@ tag.
 - Confirm `studies/` and `.harness/` remain ignored in both `.gitignore` and
   `.Rbuildignore`.
 - Confirm bundled fixtures under `inst/extdata/` are synthetic or anonymous.
+- Confirm fixtures cover both simple and review-required define.xml paths so QC
+  signals do not depend only on happy-path metadata.
 - Confirm GitHub Actions `R CMD check` passes on Ubuntu and Windows.
 - Confirm the repository visibility change is intentional before switching from
   private to public.

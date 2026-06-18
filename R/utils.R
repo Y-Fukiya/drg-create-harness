@@ -54,7 +54,13 @@ rg_read_csv_if_exists <- function(path, columns = NULL) {
     out <- stats::setNames(rep(list(logical()), length(columns)), columns)
     return(tibble::as_tibble(out))
   }
-  tibble::as_tibble(utils::read.csv(path, stringsAsFactors = FALSE, check.names = FALSE, na.strings = c("", "NA")))
+  tibble::as_tibble(utils::read.csv(
+    path,
+    stringsAsFactors = FALSE,
+    check.names = FALSE,
+    na.strings = c("", "NA"),
+    colClasses = "character"
+  ))
 }
 
 rg_empty_tbl <- function(columns) {
@@ -95,14 +101,16 @@ rg_define_variable_columns <- function() {
     "study_id", "data_class", "dataset_oid", "dataset_name", "variable_oid",
     "variable_name", "variable_label", "variable_type", "length",
     "display_format", "mandatory", "key_sequence", "role", "origin",
-    "method_oid", "codelist_oid", "source_define", "evidence_id"
+    "origin_detail", "method_oid", "codelist_oid", "source_define",
+    "evidence_id"
   )
 }
 
 rg_define_codelist_columns <- function() {
   c(
     "study_id", "codelist_oid", "codelist_name", "data_type",
-    "coded_value", "decode", "source_define", "evidence_id"
+    "coded_value", "decode", "external_dictionary", "external_version",
+    "source_define", "evidence_id"
   )
 }
 
