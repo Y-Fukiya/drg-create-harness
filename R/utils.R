@@ -121,6 +121,15 @@ rg_validation_columns <- function() {
   )
 }
 
+rg_qc_summary_columns <- function() {
+  c(
+    "guide_type", "summary_status", "total_rows", "pass_rows", "fail_rows",
+    "info_rows", "warning_rows", "error_rows", "warning_fail_rows",
+    "error_fail_rows", "review_required_rows", "manifest_drift_rows",
+    "missing_evidence_rows"
+  )
+}
+
 rg_match_arg <- function(arg, choices) {
   arg <- arg[1]
   if (!arg %in% choices) {

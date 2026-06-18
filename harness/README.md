@@ -32,6 +32,12 @@ study-project/
     drafts/
     evidence/
     qc/
+      adrg_qc_report.csv
+      csdrg_qc_report.csv
+      qc_report.csv
+      adrg_qc_summary.csv
+      csdrg_qc_summary.csv
+      qc_summary.csv
   output/
     adrg_draft.docx
     csdrg_draft.docx
@@ -55,6 +61,24 @@ Minimum useful inputs:
 - ADaM validation findings: `source/analysis/validation/*.csv` or `*.xlsx`
 - SDTM define.xml: `source/tabulation/define.xml`
 - SDTM validation findings: `source/tabulation/validation/*.csv` or `*.xlsx`
+
+If your validation export uses non-standard column names, edit
+`config.yml` before running:
+
+```yaml
+validation:
+  column_mapping:
+    rule_id: ["Finding Identifier", "Rule Reference"]
+    severity: ["Impact Classification", "Finding Grade"]
+    dataset_name: ["Dataset Code", "Data Set"]
+    variable_name: ["Variable Code", "Variable Column"]
+    message: ["Finding Narrative", "Finding Text"]
+    count: ["Records Impacted", "Rows Impacted"]
+    sponsor_explanation: ["Response Text"]
+    status: ["Review Disposition"]
+```
+
+You only need to list the fields that differ from the built-in defaults.
 
 Run both guides:
 
@@ -118,8 +142,9 @@ Each run performs the same deterministic pipeline:
 2. extract define.xml and validation metadata into `work/extracted/`
 3. build evidence rows in `work/evidence/evidence_table.csv`
 4. draft ADRG/cSDRG JSON under `work/drafts/`
-5. write QC rows to `work/qc/qc_report.csv`
-6. render DOCX files under `output/`
+5. write guide-specific QC rows and summaries under `work/qc/`
+6. render DOCX files under `output/`, including a compact QC summary when
+   available
 7. write `output/harness_summary.json`
 
 QC failures do not stop DOCX generation by default. They are review signals for

@@ -1,3 +1,20 @@
+rg_default_validation_column_mapping <- function() {
+  list(
+    tool_name = c("tool_name", "tool", "validator", "source"),
+    tool_version = c("tool_version", "validator_version", "version"),
+    standard = c("standard", "standard_name", "model"),
+    standard_version = c("standard_version", "standard version", "model_version"),
+    rule_id = c("rule_id", "rule id", "rule", "check_id", "check id", "id"),
+    severity = c("severity", "severity level", "level", "type"),
+    dataset_name = c("dataset_name", "dataset", "domain", "domain_name", "table"),
+    variable_name = c("variable_name", "variable", "var", "column", "item"),
+    message = c("message", "description", "finding", "issue", "details", "error_message", "error"),
+    count = c("count", "records", "record_count", "occurrences", "n"),
+    sponsor_explanation = c("sponsor_explanation", "explanation", "sponsor comment", "sponsor_comment", "comment", "response"),
+    status = c("status", "outcome", "disposition", "state")
+  )
+}
+
 rg_default_config <- function(study_id, project_id, guide_types = c("adrg", "csdrg")) {
   guide_types <- intersect(guide_types, c("adrg", "csdrg"))
   cfg <- list(
@@ -24,6 +41,9 @@ rg_default_config <- function(study_id, project_id, guide_types = c("adrg", "csd
         template = "templates/csdrg_template.docx",
         output = "output/csdrg_draft.docx"
       )
+    ),
+    validation = list(
+      column_mapping = rg_default_validation_column_mapping()
     ),
     llm = list(
       enabled = FALSE,

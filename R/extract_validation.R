@@ -3,6 +3,9 @@ rg_normalize_col <- function(x) {
 }
 
 rg_pick_col <- function(data, candidates) {
+  if (is.null(candidates) || length(candidates) == 0) {
+    return(rep(NA, nrow(data)))
+  }
   normalized <- rg_normalize_col(names(data))
   candidate_norm <- rg_normalize_col(candidates)
   idx <- match(candidate_norm, normalized, nomatch = 0)
@@ -11,6 +14,40 @@ rg_pick_col <- function(data, candidates) {
     return(rep(NA, nrow(data)))
   }
   data[[idx[[1]]]]
+}
+
+rg_column_candidates <- function(x) {
+  if (is.null(x)) {
+    return(character())
+  }
+  x <- unlist(x, use.names = FALSE)
+  x <- trimws(as.character(x))
+  x[nzchar(x)]
+}
+
+rg_merge_column_mapping <- function(base, override = NULL) {
+  if (is.null(override) || length(override) == 0) {
+    return(base)
+  }
+  for (field in names(override)) {
+    candidates <- rg_column_candidates(override[[field]])
+    if (length(candidates) == 0) {
+      next
+    }
+    base[[field]] <- unique(c(candidates, rg_column_candidates(base[[field]])))
+  }
+  base
+}
+
+rg_validation_column_mapping <- function(config = NULL, column_mapping = NULL) {
+  mapping <- rg_default_validation_column_mapping()
+  if (!is.null(config)) {
+    mapping <- rg_merge_column_mapping(
+      mapping,
+      rg_config_value(config, c("validation", "column_mapping"), default = NULL)
+    )
+  }
+  rg_merge_column_mapping(mapping, column_mapping)
 }
 
 rg_xlsx_col_index <- function(ref) {
@@ -118,7 +155,7 @@ rg_read_validation_table <- function(path) {
   stop("Validation import supports only .csv and .xlsx files in the MVP.", call. = FALSE)
 }
 
-rg_extract_validation <- function(path, study_id = NULL, data_class = c("auto", "sdtm", "adam", "unknown")) {
+rg_extract_validation <- function(path, study_id = NULL, data_class = c("auto", "sdtm", "adam", "unknown"), column_mapping = NULL) {
   data_class <- match.arg(data_class)
   source_file <- rg_norm_path(path)
   if (!fs::file_exists(source_file)) {
@@ -129,23 +166,24 @@ rg_extract_validation <- function(path, study_id = NULL, data_class = c("auto", 
   if (nrow(raw) == 0) {
     return(rg_empty_tbl(rg_validation_columns()))
   }
+  mapping <- rg_validation_column_mapping(column_mapping = column_mapping)
 
   out <- tibble::tibble(
     study_id = study_id %||% NA_character_,
     data_class = data_class,
     source_file = source_file,
-    tool_name = as.character(rg_pick_col(raw, c("tool_name", "tool", "validator", "source"))),
-    tool_version = as.character(rg_pick_col(raw, c("tool_version", "validator_version", "version"))),
-    standard = as.character(rg_pick_col(raw, c("standard", "standard_name", "model"))),
-    standard_version = as.character(rg_pick_col(raw, c("standard_version", "standard version", "model_version"))),
-    rule_id = as.character(rg_pick_col(raw, c("rule_id", "rule id", "rule", "check_id", "check id", "id"))),
-    severity = as.character(rg_pick_col(raw, c("severity", "severity level", "level", "type"))),
-    dataset_name = as.character(rg_pick_col(raw, c("dataset_name", "dataset", "domain", "domain_name", "table"))),
-    variable_name = as.character(rg_pick_col(raw, c("variable_name", "variable", "var", "column", "item"))),
-    message = as.character(rg_pick_col(raw, c("message", "description", "finding", "issue", "details", "error_message", "error"))),
-    count = suppressWarnings(as.integer(rg_pick_col(raw, c("count", "records", "record_count", "occurrences", "n")))),
-    sponsor_explanation = as.character(rg_pick_col(raw, c("sponsor_explanation", "explanation", "sponsor comment", "sponsor_comment", "comment", "response"))),
-    status = as.character(rg_pick_col(raw, c("status", "outcome", "disposition", "state")))
+    tool_name = as.character(rg_pick_col(raw, mapping$tool_name)),
+    tool_version = as.character(rg_pick_col(raw, mapping$tool_version)),
+    standard = as.character(rg_pick_col(raw, mapping$standard)),
+    standard_version = as.character(rg_pick_col(raw, mapping$standard_version)),
+    rule_id = as.character(rg_pick_col(raw, mapping$rule_id)),
+    severity = as.character(rg_pick_col(raw, mapping$severity)),
+    dataset_name = as.character(rg_pick_col(raw, mapping$dataset_name)),
+    variable_name = as.character(rg_pick_col(raw, mapping$variable_name)),
+    message = as.character(rg_pick_col(raw, mapping$message)),
+    count = suppressWarnings(as.integer(rg_pick_col(raw, mapping$count))),
+    sponsor_explanation = as.character(rg_pick_col(raw, mapping$sponsor_explanation)),
+    status = as.character(rg_pick_col(raw, mapping$status))
   )
   out$evidence_id <- vapply(seq_len(nrow(out)), function(i) {
     locator <- paste(out$rule_id[[i]], out$dataset_name[[i]], out$variable_name[[i]], i, sep = "/")
@@ -156,6 +194,7 @@ rg_extract_validation <- function(path, study_id = NULL, data_class = c("auto", 
 
 rg_extract_metadata <- function(project_path, write = TRUE) {
   project_path <- rg_norm_path(project_path)
+  config <- rg_read_config(project_path)
   study_id <- rg_project_study_id(project_path)
   manifest <- rg_read_manifest(project_path)
   if (nrow(manifest) == 0) {
@@ -176,7 +215,12 @@ rg_extract_metadata <- function(project_path, write = TRUE) {
     if (!identical(row$source_type, "validation")) {
       return(NULL)
     }
-    rg_extract_validation(row$file_path, study_id = study_id, data_class = row$data_class)
+    rg_extract_validation(
+      row$file_path,
+      study_id = study_id,
+      data_class = row$data_class,
+      column_mapping = rg_validation_column_mapping(config = config)
+    )
   })
   validation_results <- Filter(Negate(is.null), validation_results)
 

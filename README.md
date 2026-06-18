@@ -21,7 +21,7 @@ A harness run creates:
 - `work/manifest.json`
 - extracted metadata CSV files under `work/extracted/`
 - evidence rows under `work/evidence/`
-- QC rows under `work/qc/qc_report.csv`
+- QC rows and summaries under `work/qc/`
 
 ## Safety First
 
@@ -139,6 +139,28 @@ CSV is the safest validation finding format for the MVP. XLSX is supported with
 `readxl` when installed; otherwise the built-in fallback handles only simple
 single-sheet workbooks.
 
+## Validation Column Mapping
+
+Validation finding exports often use company-specific or tool-specific column
+names. Edit `config.yml` when the built-in defaults do not pick up the right
+columns:
+
+```yaml
+validation:
+  column_mapping:
+    rule_id: ["Finding Identifier", "Rule Reference"]
+    severity: ["Impact Classification", "Finding Grade"]
+    dataset_name: ["Dataset Code", "Data Set"]
+    variable_name: ["Variable Code", "Variable Column"]
+    message: ["Finding Narrative", "Finding Text"]
+    count: ["Records Impacted", "Rows Impacted"]
+    sponsor_explanation: ["Response Text"]
+    status: ["Review Disposition"]
+```
+
+Mapped names are tried before the default names, so you can add only the fields
+that differ from your validation export.
+
 ## Expected Output Layout
 
 ```text
@@ -152,6 +174,12 @@ studies/ABC-001/
     extracted/
     evidence/
     qc/
+      adrg_qc_report.csv
+      csdrg_qc_report.csv
+      qc_report.csv
+      adrg_qc_summary.csv
+      csdrg_qc_summary.csv
+      qc_summary.csv
 ```
 
 See `harness/README.md` for the full directory contract and CLI options.
@@ -176,6 +204,7 @@ rg_scan_sources(proj)
 rg_extract_metadata(proj)
 rg_draft_guide(proj, guide_type = "adrg", mode = "dry_run")
 rg_qc(proj, guide_type = "adrg")
+rg_qc_summary(proj, guide_type = "adrg")
 rg_render_docx(proj, guide_type = "adrg")
 ```
 
@@ -201,9 +230,12 @@ also summarized in the draft guide's unresolved items section, whose
 when gaps are present. If no gap is detected, the section carries source
 metadata evidence supporting that no-gap statement.
 
-QC output is intentionally row-oriented in the MVP. It does not add an overall
-status column yet; a separate summary helper can be added later when CI or
-release gating needs are clearer.
+QC output includes both row-oriented reports and one-row summaries. The
+guide-specific reports are written as `work/qc/adrg_qc_report.csv` and
+`work/qc/csdrg_qc_report.csv`; the compatibility `work/qc/qc_report.csv`
+contains the latest guide run. Summary CSV files include `summary_status`,
+warning/error fail counts, review-required rows, manifest drift, and missing
+evidence counts.
 
 `rg_extract_metadata()` uses the existing `work/manifest.json` when present and
 does not automatically rescan source files. If no manifest exists yet, it runs
@@ -219,10 +251,10 @@ re-extract automatically.
 
 `rg_render_docx()` intentionally continues even when QC rows have
 `status = "fail"`. The package prioritizes producing a reviewable draft; QC
-issues remain visible in `work/qc/qc_report.csv` and in the unresolved items
-section where applicable.
-DOCX output does not include a QC summary table in the MVP; QC remains a
-separate CSV artifact.
+issues remain visible in `work/qc/` and in the unresolved items section where
+applicable. When QC summary artifacts exist, DOCX output appends a compact QC
+summary table so reviewers can see the draft status without opening the CSV
+first.
 
 Human review is required. The generated documents are drafts and are not
 submission-ready reviewer guides.

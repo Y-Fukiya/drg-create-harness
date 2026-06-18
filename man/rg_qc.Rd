@@ -13,6 +13,8 @@ rg_qc(project_path, guide_type = c("adrg", "csdrg"), level = c("basic", "strict"
 \description{
 Run row-oriented QC checks for draft presence, required sections, dataset
 inventory, evidence ids, validation reflection, unsupported define metadata, and
-manifest hash drift.
+manifest hash drift. When \code{write = TRUE}, the latest compatibility report
+is written to \code{work/qc/qc_report.csv} and a guide-specific report is
+written to \code{work/qc/<guide>_qc_report.csv}.
 }
 \value{A QC report tibble.}

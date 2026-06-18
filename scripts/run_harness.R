@@ -163,15 +163,6 @@ copy_fixture <- function(example, project_path, root) {
   invisible(TRUE)
 }
 
-summarise_qc <- function(qc) {
-  list(
-    rows = nrow(qc),
-    fail_rows = sum(qc$status == "fail", na.rm = TRUE),
-    warning_fail_rows = sum(qc$status == "fail" & qc$severity == "warning", na.rm = TRUE),
-    error_fail_rows = sum(qc$status == "fail" & qc$severity == "error", na.rm = TRUE)
-  )
-}
-
 write_summary <- function(summary, path) {
   dir.create(dirname(path), recursive = TRUE, showWarnings = FALSE)
   jsonlite::write_json(summary, path, pretty = TRUE, auto_unbox = TRUE, null = "null")
@@ -243,15 +234,17 @@ run_harness <- function(args = commandArgs(trailingOnly = TRUE)) {
   outputs <- lapply(guides, function(guide_type) {
     draft <- rg_draft_guide(project_path, guide_type = guide_type, mode = mode, write = TRUE)
     qc <- rg_qc(project_path, guide_type = guide_type, level = qc_level, write = TRUE)
+    qc_summary <- rg_qc_summary(project_path, guide_type = guide_type, qc = qc, write = TRUE)
     docx <- rg_render_docx(project_path, guide_type = guide_type)
-    qc_summary <- summarise_qc(qc)
+    qc_summary_row <- as.list(qc_summary[1, ])
     list(
       guide_type = guide_type,
       draft_path = file.path(project_path, "work", "drafts", paste0(guide_type, "_draft.json")),
-      qc_path = file.path(project_path, "work", "qc", "qc_report.csv"),
+      qc_path = file.path(project_path, "work", "qc", paste0(guide_type, "_qc_report.csv")),
+      qc_summary_path = file.path(project_path, "work", "qc", paste0(guide_type, "_qc_summary.csv")),
       docx_path = docx,
       sections = length(draft$sections),
-      qc = qc_summary
+      qc = qc_summary_row
     )
   })
   names(outputs) <- guides
@@ -272,7 +265,7 @@ run_harness <- function(args = commandArgs(trailingOnly = TRUE)) {
   cat("  define datasets: ", summary$define_dataset_rows, "\n", sep = "")
   cat("  validation findings: ", summary$validation_finding_rows, "\n", sep = "")
   for (out in outputs) {
-    cat("  ", out$guide_type, ": ", out$docx_path, " (QC fail rows: ", out$qc$fail_rows, ")\n", sep = "")
+    cat("  ", out$guide_type, ": ", out$docx_path, " (QC status: ", out$qc$summary_status, ", fail rows: ", out$qc$fail_rows, ")\n", sep = "")
   }
   cat("  summary: ", summary_path, "\n", sep = "")
 

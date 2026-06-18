@@ -45,6 +45,33 @@ rg_render_docx <- function(project_path, guide_type = c("adrg", "csdrg"), templa
     }
   }
 
+  qc_summary <- rg_read_csv_if_exists(
+    fs::path(project_path, "work", "qc", paste0(guide_type, "_qc_summary.csv")),
+    rg_qc_summary_columns()
+  )
+  if (nrow(qc_summary) == 0) {
+    qc_report_path <- fs::path(project_path, "work", "qc", paste0(guide_type, "_qc_report.csv"))
+    if (!fs::file_exists(qc_report_path)) {
+      qc_report_path <- fs::path(project_path, "work", "qc", "qc_report.csv")
+    }
+    if (fs::file_exists(qc_report_path)) {
+      qc_report <- rg_read_csv_if_exists(qc_report_path)
+      qc_summary <- rg_qc_summary(project_path, guide_type = guide_type, qc = qc_report, write = FALSE)
+    }
+  }
+  if (nrow(qc_summary) > 0) {
+    doc <- officer::body_add_par(doc, "QC Summary", style = "heading 2")
+    qc_tbl <- rg_compact_table(
+      qc_summary,
+      c(
+        "guide_type", "summary_status", "total_rows", "fail_rows",
+        "warning_fail_rows", "error_fail_rows", "review_required_rows",
+        "manifest_drift_rows"
+      )
+    )
+    doc <- flextable::body_add_flextable(doc, rg_flextable(qc_tbl))
+  }
+
   fs::dir_create(fs::path_dir(output))
   print(doc, target = output)
   invisible(output)

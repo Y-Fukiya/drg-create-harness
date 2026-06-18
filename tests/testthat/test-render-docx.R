@@ -57,5 +57,6 @@ test_that("rg_render_docx continues when QC has failing rows", {
   utils::unzip(out, files = "word/document.xml", exdir = xml_dir)
   document_xml <- paste(readLines(file.path(xml_dir, "word", "document.xml"), warn = FALSE), collapse = "\n")
   expect_true(grepl("ValueListDef", document_xml))
+  expect_true(grepl("QC Summary", document_xml))
   expect_false(grepl("unsupported_define_metadata", document_xml))
 })
