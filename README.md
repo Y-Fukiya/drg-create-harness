@@ -23,6 +23,13 @@ rg_qc(proj, guide_type = "adrg")
 rg_render_docx(proj, guide_type = "adrg")
 ```
 
+For a runnable package-bundled example with synthetic fixtures:
+
+```r
+source(system.file("examples", "synthetic-e2e.R", package = "reviewerguideR"))
+result$docx
+```
+
 ## Scope
 
 This MVP supports single-study ADRG/cSDRG draft generation, basic `define.xml`
