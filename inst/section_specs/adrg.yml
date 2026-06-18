@@ -1,0 +1,32 @@
+guide_type: "adrg"
+sections:
+  - section_id: "intro"
+    title: "Introduction"
+    required: true
+    output_type: "narrative"
+    source_tables: []
+  - section_id: "analysis_data_standards"
+    title: "Analysis Data Standards"
+    required: true
+    output_type: "narrative_plus_table"
+    source_tables:
+      - define_datasets
+  - section_id: "adam_dataset_inventory"
+    title: "ADaM Dataset Inventory"
+    required: true
+    output_type: "table"
+    source_tables:
+      - define_datasets
+      - define_variables
+  - section_id: "adam_conformance_findings"
+    title: "ADaM Conformance Findings"
+    required: true
+    output_type: "validation_summary"
+    source_tables:
+      - validation_findings
+  - section_id: "unresolved_items"
+    title: "Unresolved Items and Human Review Notes"
+    required: true
+    output_type: "table"
+    source_tables:
+      - qc_report

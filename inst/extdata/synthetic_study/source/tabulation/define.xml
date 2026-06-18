@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ODM xmlns="http://www.cdisc.org/ns/odm/v1.3"
+     xmlns:def="http://www.cdisc.org/ns/def/v2.0"
+     xmlns:xlink="http://www.w3.org/1999/xlink">
+  <Study OID="SYN-SDTM">
+    <GlobalVariables>
+      <StudyName>SYN-001</StudyName>
+    </GlobalVariables>
+    <MetaDataVersion OID="MDV.SDTM" Name="SDTM metadata">
+      <ItemGroupDef OID="IG.DM" Name="DM" Label="Demographics"
+                    Purpose="Tabulation" Repeating="No" IsReferenceData="No"
+                    def:Structure="One record per subject" def:Class="SPECIAL PURPOSE">
+        <def:leaf xlink:href="dm.xpt"><def:title>dm.xpt</def:title></def:leaf>
+        <ItemRef ItemOID="IT.DM.STUDYID" Mandatory="Yes" KeySequence="1"/>
+        <ItemRef ItemOID="IT.DM.USUBJID" Mandatory="Yes" KeySequence="2"/>
+        <ItemRef ItemOID="IT.DM.SEX" Mandatory="Yes"/>
+      </ItemGroupDef>
+      <ItemGroupDef OID="IG.AE" Name="AE" Label="Adverse Events"
+                    Purpose="Tabulation" Repeating="Yes" IsReferenceData="No"
+                    def:Structure="One record per adverse event" def:Class="EVENTS">
+        <def:leaf xlink:href="ae.xpt"><def:title>ae.xpt</def:title></def:leaf>
+        <ItemRef ItemOID="IT.AE.STUDYID" Mandatory="Yes" KeySequence="1"/>
+        <ItemRef ItemOID="IT.AE.USUBJID" Mandatory="Yes" KeySequence="2"/>
+        <ItemRef ItemOID="IT.AE.AETERM" Mandatory="Yes"/>
+      </ItemGroupDef>
+      <ItemDef OID="IT.DM.STUDYID" Name="STUDYID" Label="Study Identifier" DataType="text" Length="20"/>
+      <ItemDef OID="IT.DM.USUBJID" Name="USUBJID" Label="Unique Subject Identifier" DataType="text" Length="40"/>
+      <ItemDef OID="IT.DM.SEX" Name="SEX" Label="Sex" DataType="text" Length="1">
+        <CodeListRef CodeListOID="CL.SEX"/>
+      </ItemDef>
+      <ItemDef OID="IT.AE.STUDYID" Name="STUDYID" Label="Study Identifier" DataType="text" Length="20"/>
+      <ItemDef OID="IT.AE.USUBJID" Name="USUBJID" Label="Unique Subject Identifier" DataType="text" Length="40"/>
+      <ItemDef OID="IT.AE.AETERM" Name="AETERM" Label="Reported Term for the Adverse Event" DataType="text" Length="200"/>
+      <CodeList OID="CL.SEX" Name="Sex" DataType="text">
+        <CodeListItem CodedValue="F"><Decode><TranslatedText xml:lang="en">Female</TranslatedText></Decode></CodeListItem>
+        <CodeListItem CodedValue="M"><Decode><TranslatedText xml:lang="en">Male</TranslatedText></Decode></CodeListItem>
+      </CodeList>
+      <MethodDef OID="MT.NONE" Name="No derivation" Type="Computation">
+        <Description><TranslatedText xml:lang="en">No derivation is applied.</TranslatedText></Description>
+      </MethodDef>
+    </MetaDataVersion>
+  </Study>
+</ODM>

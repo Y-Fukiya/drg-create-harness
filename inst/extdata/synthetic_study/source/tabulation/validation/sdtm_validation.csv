@@ -1,0 +1,2 @@
+Rule ID,Severity,Dataset,Variable,Message,Count,Sponsor Explanation,Status,Tool,Version,Standard,Standard Version
+SD001,Warning,DM,SEX,Sex codelist requires review,1,Will be explained in cSDRG,Open,Pinnacle 21 Community,4.0,SDTM,1.7

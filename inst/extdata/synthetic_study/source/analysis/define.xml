@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ODM xmlns="http://www.cdisc.org/ns/odm/v1.3"
+     xmlns:def="http://www.cdisc.org/ns/def/v2.0"
+     xmlns:xlink="http://www.w3.org/1999/xlink">
+  <Study OID="SYN-ADAM">
+    <GlobalVariables>
+      <StudyName>SYN-001</StudyName>
+      <StudyDescription>Synthetic study</StudyDescription>
+      <ProtocolName>SYN-001</ProtocolName>
+    </GlobalVariables>
+    <MetaDataVersion OID="MDV.ADAM" Name="ADaM metadata">
+      <ItemGroupDef OID="IG.ADSL" Name="ADSL" Label="Subject-Level Analysis Dataset"
+                    Purpose="Analysis" Repeating="No" IsReferenceData="No"
+                    def:Structure="One record per subject" def:Class="ADSL">
+        <def:leaf xlink:href="adsl.xpt">
+          <def:title>adsl.xpt</def:title>
+        </def:leaf>
+        <ItemRef ItemOID="IT.ADSL.STUDYID" Mandatory="Yes" KeySequence="1"/>
+        <ItemRef ItemOID="IT.ADSL.USUBJID" Mandatory="Yes" KeySequence="2"/>
+        <ItemRef ItemOID="IT.ADSL.SAFFL" Mandatory="Yes" MethodOID="MT.SAFFL"/>
+      </ItemGroupDef>
+      <ItemGroupDef OID="IG.ADAE" Name="ADAE" Label="Adverse Events Analysis Dataset"
+                    Purpose="Analysis" Repeating="Yes" IsReferenceData="No"
+                    def:Structure="One record per adverse event" def:Class="OCCDS">
+        <def:leaf xlink:href="adae.xpt">
+          <def:title>adae.xpt</def:title>
+        </def:leaf>
+        <ItemRef ItemOID="IT.ADAE.STUDYID" Mandatory="Yes" KeySequence="1"/>
+        <ItemRef ItemOID="IT.ADAE.USUBJID" Mandatory="Yes" KeySequence="2"/>
+        <ItemRef ItemOID="IT.ADAE.AEDECOD" Mandatory="Yes"/>
+      </ItemGroupDef>
+      <ItemDef OID="IT.ADSL.STUDYID" Name="STUDYID" Label="Study Identifier" DataType="text" Length="20"/>
+      <ItemDef OID="IT.ADSL.USUBJID" Name="USUBJID" Label="Unique Subject Identifier" DataType="text" Length="40"/>
+      <ItemDef OID="IT.ADSL.SAFFL" Name="SAFFL" Label="Safety Population Flag" DataType="text" Length="1">
+        <CodeListRef CodeListOID="CL.NY"/>
+      </ItemDef>
+      <ItemDef OID="IT.ADAE.STUDYID" Name="STUDYID" Label="Study Identifier" DataType="text" Length="20"/>
+      <ItemDef OID="IT.ADAE.USUBJID" Name="USUBJID" Label="Unique Subject Identifier" DataType="text" Length="40"/>
+      <ItemDef OID="IT.ADAE.AEDECOD" Name="AEDECOD" Label="Dictionary-Derived Term" DataType="text" Length="80"/>
+      <CodeList OID="CL.NY" Name="No Yes Response" DataType="text">
+        <CodeListItem CodedValue="N">
+          <Decode><TranslatedText xml:lang="en">No</TranslatedText></Decode>
+        </CodeListItem>
+        <CodeListItem CodedValue="Y">
+          <Decode><TranslatedText xml:lang="en">Yes</TranslatedText></Decode>
+        </CodeListItem>
+      </CodeList>
+      <MethodDef OID="MT.SAFFL" Name="Safety flag derivation" Type="Computation">
+        <Description><TranslatedText xml:lang="en">Set to Y for subjects in the safety population.</TranslatedText></Description>
+      </MethodDef>
+      <def:ValueListDef OID="VL.ADAE.AEDECOD">
+        <ItemRef ItemOID="IT.ADAE.AEDECOD" Mandatory="No"/>
+      </def:ValueListDef>
+      <def:WhereClauseDef OID="WC.ADAE.AEDECOD">
+        <RangeCheck SoftHard="Soft" def:ItemOID="IT.ADAE.AEDECOD" Comparator="EQ">
+          <CheckValue>HEADACHE</CheckValue>
+        </RangeCheck>
+      </def:WhereClauseDef>
+    </MetaDataVersion>
+  </Study>
+</ODM>

@@ -1,0 +1,32 @@
+guide_type: "csdrg"
+sections:
+  - section_id: "intro"
+    title: "Introduction"
+    required: true
+    output_type: "narrative"
+    source_tables: []
+  - section_id: "tabulation_data_standards"
+    title: "Tabulation Data Standards"
+    required: true
+    output_type: "narrative_plus_table"
+    source_tables:
+      - define_datasets
+  - section_id: "sdtm_dataset_inventory"
+    title: "SDTM Dataset Inventory"
+    required: true
+    output_type: "table"
+    source_tables:
+      - define_datasets
+      - define_variables
+  - section_id: "sdtm_conformance_findings"
+    title: "SDTM Conformance Findings"
+    required: true
+    output_type: "validation_summary"
+    source_tables:
+      - validation_findings
+  - section_id: "unresolved_items"
+    title: "Unresolved Items and Human Review Notes"
+    required: true
+    output_type: "table"
+    source_tables:
+      - qc_report

@@ -1,0 +1,3 @@
+Rule ID,Severity,Dataset,Variable,Message,Count,Sponsor Explanation,Status,Tool,Version,Standard,Standard Version
+AD001,Warning,ADSL,SAFFL,Safety flag has controlled terminology issue,1,Will be explained in ADRG,Open,Pinnacle 21 Community,4.0,ADaM,1.3
+AD002,Notice,ADAE,AEDECOD,Dictionary version note requires review,2,,Open,Pinnacle 21 Community,4.0,ADaM,1.3
