@@ -1,19 +1,69 @@
-# reviewerguideR
+# Reviewer Guide Draft Harness
 
-`reviewerguideR` is an MVP R package for creating basic ADRG and cSDRG draft
+This repository is a local harness for creating basic ADRG and cSDRG draft
 reviewer guides from structured metadata, especially `define.xml` and
 validation finding CSV/XLSX files.
 
-The package creates evidence-bound drafts and DOCX output. It is not intended to
-produce submission-ready reviewer guides without human review.
+The R package code is the engine. The intended user-facing workflow is to place
+study inputs under a harness project `source/` directory and run one command to
+generate `work/` artifacts, QC rows, and DOCX drafts.
 
-## Minimal example
+Generated documents are evidence-bound drafts. They are not submission-ready
+reviewer guides without human review.
 
-Install from a local checkout:
+## Harness Quick Start
 
-```r
-install.packages("/path/to/reviewerguideR", repos = NULL, type = "source")
+Create a study project:
+
+```bash
+make init PROJECT=studies/ABC-001 STUDY_ID=ABC-001
 ```
+
+Copy study inputs into the generated project:
+
+```text
+studies/ABC-001/source/analysis/define.xml
+studies/ABC-001/source/analysis/validation/*.csv
+studies/ABC-001/source/tabulation/define.xml
+studies/ABC-001/source/tabulation/validation/*.csv
+```
+
+Generate both draft guides:
+
+```bash
+make run PROJECT=studies/ABC-001 GUIDE=both
+```
+
+Outputs are written to:
+
+```text
+studies/ABC-001/output/adrg_draft.docx
+studies/ABC-001/output/csdrg_draft.docx
+studies/ABC-001/output/harness_summary.json
+```
+
+Run the bundled anonymous example:
+
+```bash
+make run-example PROJECT=/private/tmp/rg-harness-demo EXAMPLE=anonymous
+```
+
+The same flow is available without `make`:
+
+```bash
+Rscript scripts/run_harness.R --project studies/ABC-001 --study-id ABC-001 --guide both
+```
+
+See `harness/README.md` for the full harness directory contract and CLI options.
+
+See `docs/release-checklist.md` for the local release checks and
+`docs/post-mvp-roadmap.md` for the deferred ellmer, ragnar, iADRG/icSDRG,
+GraphRAG, Tauri, and shinylive direction. See `docs/github-publish.md` before
+publishing the repository to GitHub.
+
+## R Engine Example
+
+For direct package-level use:
 
 ```r
 library(reviewerguideR)
@@ -28,18 +78,6 @@ rg_draft_guide(proj, guide_type = "adrg", mode = "dry_run")
 rg_qc(proj, guide_type = "adrg")
 rg_render_docx(proj, guide_type = "adrg")
 ```
-
-For a runnable package-bundled example with synthetic fixtures:
-
-```r
-source(system.file("examples", "synthetic-e2e.R", package = "reviewerguideR"))
-result$docx
-```
-
-See `docs/release-checklist.md` for the local release checks and
-`docs/post-mvp-roadmap.md` for the deferred ellmer, ragnar, iADRG/icSDRG,
-GraphRAG, Tauri, and shinylive direction. See `docs/github-publish.md` before
-publishing the repository to GitHub.
 
 ## Scope
 
