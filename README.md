@@ -34,6 +34,7 @@ R package builds for that reason.
 ## Prerequisites
 
 - R 4.1 or later
+- Pandoc, for rendering the R Markdown/officedown DOCX template
 - Git, if you want to clone the repository
 - Optional: GNU Make on macOS/Linux for the `make ...` shortcuts
 - Optional: `readxl` for richer XLSX validation finding imports
@@ -43,7 +44,8 @@ Install required R packages from the repository root:
 ```r
 install.packages(c(
   "cli", "digest", "dplyr", "flextable", "fs", "glue", "jsonlite",
-  "officer", "purrr", "stringr", "tibble", "xml2", "yaml"
+  "officedown", "officer", "purrr", "rmarkdown", "stringr",
+  "tibble", "xml2", "yaml"
 ))
 ```
 
@@ -177,6 +179,10 @@ that differ from your validation export.
 
 ```text
 studies/ABC-001/
+  templates/
+    reviewers-guide.Rmd
+    word/
+      base.docx
   output/
     adrg_draft.docx
     csdrg_draft.docx
@@ -221,11 +227,28 @@ rg_qc_summary(proj, guide_type = "adrg")
 rg_render_docx(proj, guide_type = "adrg")
 ```
 
+## Word Rendering Model
+
+DOCX rendering is centered on R Markdown plus `officedown`.
+
+- `templates/reviewers-guide.Rmd` is the editable document source.
+- `templates/word/base.docx` is the single Word style base.
+- `config.yml` controls which Rmd, reference DOCX, and output file are used.
+- `flextable` is used for generated metadata, validation, value-level, and QC
+  tables.
+- `officer` remains available as an explicit fallback with
+  `rg_render_docx(..., engine = "officer")`.
+
+The `template` argument to `rg_render_docx()` is kept as a backward-compatible
+alias for `reference_docx`. Under the officedown path, a DOCX template is used
+for styles, not as a body shell whose existing paragraphs are imported.
+
 ## Scope
 
 This MVP supports single-study ADRG/cSDRG draft generation, basic `define.xml`
 metadata extraction, validation finding CSV/XLSX import, evidence table
-generation, QC reporting, and DOCX output through `officer` and `flextable`.
+generation, QC reporting, and DOCX output through R Markdown, `officedown`,
+`officer`, and `flextable`.
 For XLSX validation imports, `readxl` is used when installed; otherwise the
 package falls back to a minimal built-in reader for simple first-sheet workbooks.
 The fallback intentionally does not support multi-sheet workbooks, merged cells,
@@ -266,9 +289,11 @@ re-extract automatically.
 `rg_render_docx()` intentionally continues even when QC rows have
 `status = "fail"`. The package prioritizes producing a reviewable draft; QC
 issues remain visible in `work/qc/` and in the unresolved items section where
-applicable. When QC summary artifacts exist, DOCX output appends a compact QC
-summary table so reviewers can see the draft status without opening the CSV
-first.
+applicable. The primary renderer uses `officedown::rdocx_document()` so Markdown
+content, YAML output options, Word styles, and generated `flextable` tables flow
+through one DOCX build step. When QC summary artifacts exist, DOCX output
+appends a compact QC summary table so reviewers can see the draft status without
+opening the CSV first.
 
 Human review is required. The generated documents are drafts and are not
 submission-ready reviewer guides.
@@ -276,12 +301,13 @@ submission-ready reviewer guides.
 Subject-level data is not sent to LLM paths. XPT and dataset-like files are
 excluded from LLM and RAG eligibility by the source scanner.
 
-GraphRAG, iADRG/icSDRG, Tauri, shinylive production packaging, and PDF
-conversion are future work. Stable stubs are included for those extension
-points. shinylive is reserved for demos or UI prototypes rather than production
-processing. If the workflow becomes an app, the intended direction is Tauri with
-a local R sidecar; heavier `officer`, `flextable`, `ellmer`, and `ragnar` work
-should stay in that local R process.
+GraphRAG, iADRG/icSDRG, Quarto multi-output publishing, Tauri, shinylive
+production packaging, and PDF conversion are future work. Stable stubs are
+included for those extension points. shinylive is reserved for demos or UI
+prototypes rather than production processing. If the workflow becomes an app,
+the intended direction is Tauri with a local R sidecar; heavier `officedown`,
+`officer`, `flextable`, `ellmer`, and `ragnar` work should stay in that local R
+process.
 
 ## CI
 

@@ -46,3 +46,12 @@ scope.
 - Production app packaging should use Tauri with a local R sidecar.
 - Heavy tasks such as DOCX rendering, retrieval, and LLM integration should run
   in the local R process.
+
+## Word and Multi-Output Publishing
+
+- Keep `officedown` as the primary DOCX renderer while Word remains the review
+  and delivery surface.
+- Treat `templates/reviewers-guide.Rmd` as the editable document source and
+  `templates/word/base.docx` as the single style base.
+- Reconsider Quarto only if HTML/PDF/multi-output publishing becomes a real
+  workflow requirement.

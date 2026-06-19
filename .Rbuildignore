@@ -3,8 +3,11 @@
 ^\.RData$
 ^\.Ruserdata$
 ^\.\.Rcheck$
-^.*\.Rcheck$
+^.*\.Rcheck($|/)
 ^.*\.tar\.gz$
+^\.DS_Store$
+^\.git$
+^\.git/
 ^\.github$
 ^\.harness
 ^studies
