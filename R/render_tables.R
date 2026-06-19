@@ -10,6 +10,7 @@ rg_compact_table <- function(x, columns, max_rows = 25) {
 rg_flextable <- function(x) {
   flextable::flextable(x) |>
     flextable::theme_booktabs() |>
+    flextable::set_table_properties(layout = "fixed", width = 1) |>
     flextable::fontsize(size = 9, part = "all") |>
     flextable::bold(part = "header") |>
     flextable::autofit()

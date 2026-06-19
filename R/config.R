@@ -33,14 +33,21 @@ rg_default_config <- function(study_id, project_id, guide_types = c("adrg", "csd
     guides = list(
       adrg = list(
         enabled = "adrg" %in% guide_types,
-        template = "templates/adrg_template.docx",
+        rmd = "templates/reviewers-guide.Rmd",
+        reference_docx = "templates/word/base.docx",
         output = "output/adrg_draft.docx"
       ),
       csdrg = list(
         enabled = "csdrg" %in% guide_types,
-        template = "templates/csdrg_template.docx",
+        rmd = "templates/reviewers-guide.Rmd",
+        reference_docx = "templates/word/base.docx",
         output = "output/csdrg_draft.docx"
       )
+    ),
+    render = list(
+      engine = "officedown",
+      rmd = "templates/reviewers-guide.Rmd",
+      reference_docx = "templates/word/base.docx"
     ),
     validation = list(
       column_mapping = rg_default_validation_column_mapping()

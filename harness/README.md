@@ -26,6 +26,10 @@ study-project/
       define.xml
       validation/
         sdtm_validation.csv
+  templates/
+    reviewers-guide.Rmd
+    word/
+      base.docx
   work/
     manifest.json
     extracted/
@@ -46,7 +50,9 @@ study-project/
 ```
 
 Only `source/` and selected fields in `config.yml` are intended to be edited by
-users. `work/` and `output/` are generated artifacts.
+users. `templates/reviewers-guide.Rmd` and `templates/word/base.docx` may be
+edited when changing Word output structure or styles. `work/` and `output/` are
+generated artifacts.
 
 ## Start A New Study
 
@@ -142,6 +148,33 @@ Useful options:
 - `--fail-on-qc`: return exit code 2 when any QC row fails.
 - `--summary PATH`: write summary JSON somewhere other than `output/harness_summary.json`.
 
+## Word Rendering
+
+The default DOCX path is:
+
+```text
+templates/reviewers-guide.Rmd
+  -> officedown::rdocx_document()
+  -> output/*_draft.docx
+```
+
+`templates/word/base.docx` is the only default Word style base. Replace that
+file with a company or study style base when you need fixed paragraph, heading,
+caption, list, or table styles. Generated tables are built with `flextable`.
+
+The relevant `config.yml` fields are:
+
+```yaml
+render:
+  engine: officedown
+  rmd: templates/reviewers-guide.Rmd
+  reference_docx: templates/word/base.docx
+```
+
+Guide-specific `rmd`, `reference_docx`, and `output` values can also be set
+under `guides.adrg` or `guides.csdrg`. Use `engine: officer` only when you need
+the legacy direct DOCX fallback.
+
 ## What A Run Does
 
 Each run performs the same deterministic pipeline:
@@ -151,8 +184,8 @@ Each run performs the same deterministic pipeline:
 3. build evidence rows in `work/evidence/evidence_table.csv`
 4. draft ADRG/cSDRG JSON under `work/drafts/`
 5. write guide-specific QC rows and summaries under `work/qc/`
-6. render DOCX files under `output/`, including a compact QC summary when
-   available
+6. render DOCX files under `output/` from the officedown Rmd template,
+   including a compact QC summary when available
 7. write `output/harness_summary.json`
 
 QC failures do not stop DOCX generation by default. They are review signals for
