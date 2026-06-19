@@ -20,6 +20,29 @@ test_that("rg_collect_llm_context returns metadata-only section context", {
   expect_true(any(nzchar(stats::na.omit(context$evidence_id))))
 })
 
+test_that("rg_collect_llm_context fails closed without manifest or extracted metadata", {
+  missing_manifest <- tempfile("rg-llm-no-manifest-")
+  rg_init_project(missing_manifest, study_id = "LLM-001A")
+  copy_synthetic_sources(missing_manifest)
+
+  expect_error(
+    rg_collect_llm_context(missing_manifest, guide_type = "adrg", section_id = "adam_dataset_inventory"),
+    "Manifest is required",
+    fixed = TRUE
+  )
+
+  missing_extracted <- tempfile("rg-llm-no-extracted-")
+  rg_init_project(missing_extracted, study_id = "LLM-001B")
+  copy_synthetic_sources(missing_extracted)
+  rg_scan_sources(missing_extracted)
+
+  expect_error(
+    rg_collect_llm_context(missing_extracted, guide_type = "adrg", section_id = "adam_dataset_inventory"),
+    "Extracted metadata is required",
+    fixed = TRUE
+  )
+})
+
 test_that("rg_draft_section_mock returns deterministic structured output", {
   proj <- tempfile("rg-llm-mock-")
   rg_init_project(proj, study_id = "LLM-002")

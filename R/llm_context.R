@@ -25,19 +25,19 @@ rg_collect_llm_context <- function(project_path, guide_type = c("adrg", "csdrg")
   project_path <- rg_norm_path(project_path)
   study_id <- rg_project_study_id(project_path)
 
-  if (!fs::file_exists(fs::path(project_path, "work", "extracted", "define_datasets.csv"))) {
-    rg_extract_metadata(project_path, write = TRUE)
-  }
-
   manifest <- rg_read_manifest(project_path)
   if (nrow(manifest) == 0) {
-    manifest <- rg_scan_sources(project_path, write = TRUE)
+    stop("Manifest is required before collecting LLM context. Run rg_scan_sources() or rg_extract_metadata() first.", call. = FALSE)
   }
   disallowed <- manifest |>
     dplyr::filter(.data$source_type == "dataset" | tolower(.data$file_ext) %in% c("xpt", "sas7bdat", "parquet", "rds")) |>
     dplyr::filter(.data$include_in_llm %in% c(TRUE, "TRUE", "true", "1"))
   if (nrow(disallowed) > 0) {
     stop("Dataset-like files are marked include_in_llm=TRUE. Refusing to build LLM context.", call. = FALSE)
+  }
+
+  if (!fs::file_exists(fs::path(project_path, "work", "extracted", "define_datasets.csv"))) {
+    stop("Extracted metadata is required before collecting LLM context. Run rg_extract_metadata() first.", call. = FALSE)
   }
 
   data <- rg_filter_for_guide(rg_load_extracted(project_path), guide_type)
