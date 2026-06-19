@@ -145,7 +145,7 @@ rg_draft_text_for_section <- function(section_id, title, guide_type, study_id, d
   glue::glue("TBD: Dry-run text for {title} requires human review.")
 }
 
-rg_draft_guide <- function(project_path, guide_type = c("adrg", "csdrg"), mode = c("dry_run", "ellmer"), sections = NULL, write = TRUE) {
+rg_draft_guide <- function(project_path, guide_type = c("adrg", "csdrg"), mode = c("dry_run", "mock", "ellmer"), sections = NULL, write = TRUE) {
   guide_type <- match.arg(guide_type)
   mode <- match.arg(mode)
   project_path <- rg_norm_path(project_path)
@@ -167,17 +167,35 @@ rg_draft_guide <- function(project_path, guide_type = c("adrg", "csdrg"), mode =
 
   draft_sections <- lapply(seq_len(nrow(spec)), function(i) {
     section_id <- spec$section_id[[i]]
-    text <- as.character(rg_draft_text_for_section(section_id, spec$title[[i]], guide_type, study_id, data))
-    evidence_ids <- switch(
-      section_id,
-      intro = rg_section_evidence(data$define_datasets$evidence_id, data$validation_findings$evidence_id, limit = 25),
-      unresolved_items = rg_unresolved_evidence_ids(data),
-      rg_section_evidence(
-        if (grepl("conformance", section_id)) data$validation_findings$evidence_id else NULL,
-        if (grepl("dataset|standards", section_id)) data$define_datasets$evidence_id else NULL,
-        if (grepl("dataset", section_id)) data$define_variables$evidence_id else NULL
+    if (identical(mode, "mock")) {
+      mock <- rg_draft_section_mock(project_path, guide_type = guide_type, section_id = section_id)
+      text <- mock$draft_text
+      evidence_ids <- mock$evidence_ids
+      needs_human_review <- mock$needs_human_review
+      source_context_ids <- mock$source_context_ids
+      confidence <- mock$confidence
+      llm_mode <- mock$llm_mode
+      provider <- mock$provider
+      warnings <- mock$warnings
+    } else {
+      text <- as.character(rg_draft_text_for_section(section_id, spec$title[[i]], guide_type, study_id, data))
+      evidence_ids <- switch(
+        section_id,
+        intro = rg_section_evidence(data$define_datasets$evidence_id, data$validation_findings$evidence_id, limit = 25),
+        unresolved_items = rg_unresolved_evidence_ids(data),
+        rg_section_evidence(
+          if (grepl("conformance", section_id)) data$validation_findings$evidence_id else NULL,
+          if (grepl("dataset|standards", section_id)) data$define_datasets$evidence_id else NULL,
+          if (grepl("dataset", section_id)) data$define_variables$evidence_id else NULL
+        )
       )
-    )
+      needs_human_review <- rg_section_needs_human_review(section_id, text, evidence_ids, data)
+      source_context_ids <- character()
+      confidence <- NA_real_
+      llm_mode <- NA_character_
+      provider <- NA_character_
+      warnings <- character()
+    }
     section <- list(
       guide_type = guide_type,
       study_id = study_id,
@@ -186,9 +204,14 @@ rg_draft_guide <- function(project_path, guide_type = c("adrg", "csdrg"), mode =
       draft_markdown = text,
       evidence_ids = evidence_ids,
       status = "draft",
-      generated_by = "dry_run",
+      generated_by = mode,
       generated_at = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
-      needs_human_review = rg_section_needs_human_review(section_id, text, evidence_ids, data)
+      needs_human_review = needs_human_review,
+      source_context_ids = source_context_ids,
+      confidence = confidence,
+      llm_mode = llm_mode,
+      provider = provider,
+      warnings = warnings
     )
     section$status <- if (isTRUE(section$needs_human_review)) "needs_review" else "draft"
     section
@@ -197,7 +220,7 @@ rg_draft_guide <- function(project_path, guide_type = c("adrg", "csdrg"), mode =
   draft <- list(
     guide_type = guide_type,
     study_id = study_id,
-    generated_by = "dry_run",
+    generated_by = mode,
     generated_at = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
     sections = draft_sections
   )
