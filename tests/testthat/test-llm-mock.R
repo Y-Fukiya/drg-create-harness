@@ -85,3 +85,15 @@ test_that("rg_draft_guide mode mock writes mock metadata into sections", {
   expect_true(all(vapply(draft$sections, function(section) identical(section$provider, "mock"), logical(1))))
   expect_true(all(vapply(draft$sections, function(section) length(section$source_context_ids) > 0, logical(1))))
 })
+
+test_that("rg_draft_guide mode mock fails closed without extracted metadata", {
+  proj <- tempfile("rg-llm-guide-no-extracted-")
+  rg_init_project(proj, study_id = "LLM-004")
+  copy_synthetic_sources(proj)
+
+  expect_error(
+    rg_draft_guide(proj, guide_type = "adrg", mode = "mock"),
+    "Extracted metadata is required before mock LLM drafting",
+    fixed = TRUE
+  )
+})

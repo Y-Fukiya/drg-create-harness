@@ -155,8 +155,11 @@ rg_draft_guide <- function(project_path, guide_type = c("adrg", "csdrg"), mode =
     return(rg_draft_section_ellmer(project_path, guide_type = guide_type, section_id = sections[[1]] %||% "intro"))
   }
 
-  if (!fs::file_exists(fs::path(project_path, "work", "extracted", "define_datasets.csv"))) {
+  extracted_metadata_exists <- fs::file_exists(fs::path(project_path, "work", "extracted", "define_datasets.csv"))
+  if (!extracted_metadata_exists && identical(mode, "dry_run")) {
     rg_extract_metadata(project_path, write = TRUE)
+  } else if (!extracted_metadata_exists && identical(mode, "mock")) {
+    stop("Extracted metadata is required before mock LLM drafting. Run rg_extract_metadata() first.", call. = FALSE)
   }
 
   spec <- rg_read_section_spec(guide_type)
