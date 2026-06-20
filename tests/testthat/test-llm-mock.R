@@ -134,6 +134,31 @@ test_that("rg_draft_guide mode mock writes mock metadata into sections", {
   expect_true(all(vapply(draft$sections, function(section) length(section$source_context_ids) > 0, logical(1))))
 })
 
+test_that("rg_draft_guide writes one-value mock section fields as JSON arrays", {
+  proj <- tempfile("rg-llm-guide-arrays-")
+  rg_init_project(proj, study_id = "LLM-003A")
+  copy_synthetic_sources(proj)
+  rg_scan_sources(proj)
+  rg_extract_metadata(proj)
+
+  datasets_path <- file.path(proj, "work", "extracted", "define_datasets.csv")
+  datasets <- utils::read.csv(datasets_path, stringsAsFactors = FALSE, check.names = FALSE)
+  datasets <- datasets[1, , drop = FALSE]
+  utils::write.csv(datasets, datasets_path, row.names = FALSE, na = "")
+
+  rg_draft_guide(proj, guide_type = "adrg", mode = "mock", sections = "intro", write = TRUE)
+
+  raw <- jsonlite::read_json(
+    file.path(proj, "work", "drafts", "adrg_draft.json"),
+    simplifyVector = FALSE
+  )
+  section <- raw$sections[[1]]
+
+  expect_type(section$evidence_ids, "list")
+  expect_type(section$source_context_ids, "list")
+  expect_type(section$warnings, "list")
+})
+
 test_that("rg_draft_guide mode mock fails closed without extracted metadata", {
   proj <- tempfile("rg-llm-guide-no-extracted-")
   rg_init_project(proj, study_id = "LLM-004")

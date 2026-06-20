@@ -205,16 +205,16 @@ rg_draft_guide <- function(project_path, guide_type = c("adrg", "csdrg"), mode =
       section_id = section_id,
       section_title = spec$title[[i]],
       draft_markdown = text,
-      evidence_ids = evidence_ids,
+      evidence_ids = I(evidence_ids),
       status = "draft",
       generated_by = mode,
       generated_at = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
       needs_human_review = needs_human_review,
-      source_context_ids = source_context_ids,
+      source_context_ids = I(source_context_ids),
       confidence = confidence,
       llm_mode = llm_mode,
       provider = provider,
-      warnings = warnings
+      warnings = I(warnings)
     )
     section$status <- if (isTRUE(section$needs_human_review)) "needs_review" else "draft"
     section
