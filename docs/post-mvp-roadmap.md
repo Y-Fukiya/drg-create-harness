@@ -5,7 +5,7 @@ scope.
 
 ## Versioning
 
-- Current public MVP version: `0.1.0`.
+- Current public MVP version: `0.1.1`.
 - Next development version after release should return to a `.9000` suffix.
 - Patch releases should preserve existing public function signatures unless a
   breaking change is explicitly called out.

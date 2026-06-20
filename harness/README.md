@@ -163,6 +163,8 @@ Rscript scripts/run_harness.R --project .harness/rg-cdisc-pilot --external-examp
 
 The project work area records the upstream URL, optional commit SHA when
 available, attribution, disclaimer source, and local file hashes.
+Only `define.xml` metadata files are copied into the harness project. CDISC
+Pilot datasets and PDFs remain external and should not be committed.
 
 ## Direct CLI
 

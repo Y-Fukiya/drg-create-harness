@@ -129,7 +129,14 @@ For the same guided prompt flow on Windows:
 git clone https://github.com/Y-Fukiya/drg-create-harness.git
 cd drg-create-harness
 scripts\run_harness.cmd --project .harness\rg-demo --copy-example anonymous
-scripts\run_harness.cmd --project studies\ABC-001 --study-id ABC-001 --guide both
+scripts\run_harness.cmd --project studies\ABC-001 --study-id ABC-001 --guide both --init --no-run
+```
+
+Copy your `define.xml` and validation CSV/XLSX files into
+`studies\ABC-001\source\`, then run:
+
+```bat
+scripts\run_harness.cmd --project studies\ABC-001 --guide both
 ```
 
 ## Mock LLM Drafting
@@ -163,6 +170,8 @@ Rscript scripts/run_harness.R --project .harness/rg-cdisc-pilot --external-examp
 The harness records the upstream URL, optional commit SHA when available,
 attribution, disclaimer source, and local file hashes in the project work area.
 If the source lives somewhere else, pass `--external-source PATH`.
+Only `define.xml` metadata files are copied into the harness project. CDISC
+Pilot datasets and PDFs remain external and should not be committed.
 
 ## Expected Input Layout
 
