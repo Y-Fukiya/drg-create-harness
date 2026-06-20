@@ -5,6 +5,24 @@ rg_llm_context_columns <- function() {
   )
 }
 
+rg_llm_truthy <- function(x) {
+  !is.na(x) & tolower(as.character(x)) %in% c("true", "1")
+}
+
+rg_validate_llm_context_limit <- function(limit) {
+  if (
+    !is.numeric(limit) ||
+      length(limit) != 1 ||
+      is.na(limit) ||
+      !is.finite(limit) ||
+      limit < 1 ||
+      limit != as.integer(limit)
+  ) {
+    stop("limit must be a positive finite integer.", call. = FALSE)
+  }
+  as.integer(limit)
+}
+
 rg_context_row <- function(study_id, guide_type, section_id, context_type, source_file, text, evidence_id) {
   seed <- paste(study_id, guide_type, section_id, context_type, evidence_id, text, sep = "|")
   tibble::tibble(
@@ -22,6 +40,7 @@ rg_context_row <- function(study_id, guide_type, section_id, context_type, sourc
 
 rg_collect_llm_context <- function(project_path, guide_type = c("adrg", "csdrg"), section_id, limit = 40) {
   guide_type <- match.arg(guide_type)
+  limit <- rg_validate_llm_context_limit(limit)
   project_path <- rg_norm_path(project_path)
   study_id <- rg_project_study_id(project_path)
 
@@ -31,7 +50,7 @@ rg_collect_llm_context <- function(project_path, guide_type = c("adrg", "csdrg")
   }
   disallowed <- manifest |>
     dplyr::filter(.data$source_type == "dataset" | tolower(.data$file_ext) %in% c("xpt", "sas7bdat", "parquet", "rds")) |>
-    dplyr::filter(.data$include_in_llm %in% c(TRUE, "TRUE", "true", "1"))
+    dplyr::filter(rg_llm_truthy(.data$include_in_llm))
   if (nrow(disallowed) > 0) {
     stop("Dataset-like files are marked include_in_llm=TRUE. Refusing to build LLM context.", call. = FALSE)
   }
@@ -98,6 +117,6 @@ rg_collect_llm_context <- function(project_path, guide_type = c("adrg", "csdrg")
   }
 
   out <- rg_bind_or_empty(rows, rg_llm_context_columns())
-  out <- dplyr::filter(out, .data$include_in_llm %in% c(TRUE, "TRUE", "true", "1"))
+  out <- dplyr::filter(out, rg_llm_truthy(.data$include_in_llm))
   utils::head(out, limit)
 }

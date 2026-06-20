@@ -18,6 +18,12 @@ test_that("rg_collect_llm_context returns metadata-only section context", {
   expect_false(any(grepl("\\.xpt$", context$source_file, ignore.case = TRUE)))
   expect_false(any(grepl("dataset records stay out of LLM context", context$text, fixed = TRUE)))
   expect_true(any(nzchar(stats::na.omit(context$evidence_id))))
+
+  expect_error(
+    rg_collect_llm_context(proj, guide_type = "adrg", section_id = "adam_dataset_inventory", limit = 0),
+    "limit must be a positive finite integer",
+    fixed = TRUE
+  )
 })
 
 test_that("rg_collect_llm_context fails closed without manifest or extracted metadata", {
@@ -39,6 +45,27 @@ test_that("rg_collect_llm_context fails closed without manifest or extracted met
   expect_error(
     rg_collect_llm_context(missing_extracted, guide_type = "adrg", section_id = "adam_dataset_inventory"),
     "Extracted metadata is required",
+    fixed = TRUE
+  )
+})
+
+test_that("rg_collect_llm_context refuses dataset-like files marked for LLM use", {
+  proj <- tempfile("rg-llm-unsafe-manifest-")
+  rg_init_project(proj, study_id = "LLM-001C")
+  copy_synthetic_sources(proj)
+  dir.create(file.path(proj, "source", "analysis"), recursive = TRUE, showWarnings = FALSE)
+  writeLines("dataset records stay out of LLM context", file.path(proj, "source", "analysis", "adsl.xpt"))
+  rg_scan_sources(proj)
+
+  manifest_path <- file.path(proj, "work", "manifest.json")
+  manifest <- rg_read_manifest(proj)
+  manifest$include_in_llm[manifest$file_name == "adsl.xpt"] <- TRUE
+  jsonlite::write_json(manifest, manifest_path, dataframe = "rows", pretty = TRUE, auto_unbox = TRUE, na = "null")
+  rg_extract_metadata(proj)
+
+  expect_error(
+    rg_collect_llm_context(proj, guide_type = "adrg", section_id = "adam_dataset_inventory"),
+    "Dataset-like files are marked include_in_llm=TRUE",
     fixed = TRUE
   )
 })
@@ -65,6 +92,27 @@ test_that("rg_draft_section_mock returns deterministic structured output", {
   expect_true(is.numeric(first$confidence))
   expect_true(first$confidence >= 0 && first$confidence <= 1)
   expect_false(isTRUE(first$needs_human_review))
+})
+
+test_that("rg_draft_section_mock binds dataset claims to collected context", {
+  proj <- tempfile("rg-llm-context-bound-")
+  rg_init_project(proj, study_id = "LLM-002B")
+  copy_synthetic_sources(proj)
+  rg_scan_sources(proj)
+  rg_extract_metadata(proj)
+
+  datasets_path <- file.path(proj, "work", "extracted", "define_datasets.csv")
+  datasets <- utils::read.csv(datasets_path, stringsAsFactors = FALSE, check.names = FALSE)
+  datasets <- datasets[rep(1, 45), , drop = FALSE]
+  datasets$dataset_name <- sprintf("AD%03d", seq_len(nrow(datasets)))
+  datasets$dataset_label <- sprintf("Analysis Dataset %03d", seq_len(nrow(datasets)))
+  datasets$evidence_id <- paste0("DEFDS-", sprintf("%03d", seq_len(nrow(datasets))))
+  utils::write.csv(datasets, datasets_path, row.names = FALSE, na = "")
+
+  draft <- rg_draft_section_mock(proj, guide_type = "adrg", section_id = "adam_dataset_inventory")
+
+  expect_match(draft$draft_text, "includes 40 dataset context rows", fixed = TRUE)
+  expect_false(grepl("45 datasets", draft$draft_text, fixed = TRUE))
 })
 
 test_that("rg_draft_guide mode mock writes mock metadata into sections", {
@@ -94,6 +142,26 @@ test_that("rg_draft_guide mode mock fails closed without extracted metadata", {
   expect_error(
     rg_draft_guide(proj, guide_type = "adrg", mode = "mock"),
     "Extracted metadata is required before mock LLM drafting",
+    fixed = TRUE
+  )
+})
+
+test_that("rg_draft_guide preserves dry-run auto-extract and ellmer guard behavior", {
+  dry_run_proj <- tempfile("rg-llm-dry-run-auto-")
+  rg_init_project(dry_run_proj, study_id = "LLM-005")
+  copy_synthetic_sources(dry_run_proj)
+
+  expect_false(file.exists(file.path(dry_run_proj, "work", "extracted", "define_datasets.csv")))
+  draft <- rg_draft_guide(dry_run_proj, guide_type = "adrg", mode = "dry_run", sections = "intro", write = FALSE)
+  expect_equal(draft$generated_by, "dry_run")
+  expect_true(file.exists(file.path(dry_run_proj, "work", "extracted", "define_datasets.csv")))
+
+  ellmer_proj <- tempfile("rg-llm-ellmer-guard-")
+  rg_init_project(ellmer_proj, study_id = "LLM-006")
+
+  expect_error(
+    rg_draft_guide(ellmer_proj, guide_type = "adrg", mode = "ellmer"),
+    "LLM drafting is disabled",
     fixed = TRUE
   )
 })
