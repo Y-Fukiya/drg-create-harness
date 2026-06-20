@@ -56,6 +56,41 @@ copy_anonymous_sources <- function(project_path) {
   )
 }
 
+make_fake_cdisc_pilot <- function(source_path = tempfile("fake-cdisc-pilot-")) {
+  source_path <- normalizePath(source_path, mustWork = FALSE)
+  sdtm_dir <- file.path(
+    source_path,
+    "updated-pilot-submission-package", "900172", "m5", "datasets",
+    "cdiscpilot01", "tabulations", "sdtm"
+  )
+  adam_dir <- file.path(
+    source_path,
+    "updated-pilot-submission-package", "900172", "m5", "datasets",
+    "cdiscpilot01", "analysis", "adam"
+  )
+
+  dir.create(sdtm_dir, recursive = TRUE, showWarnings = FALSE)
+  dir.create(adam_dir, recursive = TRUE, showWarnings = FALSE)
+  file.copy(
+    rg_fixture("extdata", "synthetic_study", "source", "tabulation", "define.xml"),
+    file.path(sdtm_dir, "define.xml"),
+    overwrite = TRUE
+  )
+  file.copy(
+    rg_fixture("extdata", "synthetic_study", "source", "analysis", "define.xml"),
+    file.path(adam_dir, "define.xml"),
+    overwrite = TRUE
+  )
+  writeLines("fake xpt content", file.path(sdtm_dir, "dm.xpt"))
+  writeLines("fake xpt content", file.path(adam_dir, "adsl.xpt"))
+  writeLines(
+    "fake disclaimer placeholder",
+    file.path(source_path, "CDISC.Pilot Project Data.Website Disclaimer.v1.pdf")
+  )
+
+  as.character(rg_norm_path(source_path))
+}
+
 xml_escape <- function(x) {
   x <- gsub("&", "&amp;", x, fixed = TRUE)
   x <- gsub("<", "&lt;", x, fixed = TRUE)
