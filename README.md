@@ -129,8 +129,50 @@ For the same guided prompt flow on Windows:
 git clone https://github.com/Y-Fukiya/drg-create-harness.git
 cd drg-create-harness
 scripts\run_harness.cmd --project .harness\rg-demo --copy-example anonymous
-scripts\run_harness.cmd --project studies\ABC-001 --study-id ABC-001 --guide both
+scripts\run_harness.cmd --project studies\ABC-001 --study-id ABC-001 --guide both --init --no-run
 ```
+
+Copy your `define.xml` and validation CSV/XLSX files into
+`studies\ABC-001\source\`, then run:
+
+```bat
+scripts\run_harness.cmd --project studies\ABC-001 --guide both
+```
+
+## Mock LLM Drafting
+
+Use deterministic mock drafting when you want LLM-shaped guide sections without
+API keys or provider calls:
+
+```bash
+Rscript scripts/run_harness.R --project .harness/rg-demo --copy-example anonymous --llm-mode mock
+```
+
+Mock drafting uses metadata-only context from `define.xml` extraction and
+validation findings. XPT contents and ADaM/SDTM-like dataset files, including
+CSV/XLSX files under analysis or tabulation data paths, are excluded from LLM
+context. The generated DOCX files remain drafts and require human review before
+any submission use.
+
+At the R engine level, the same mode is available with
+`rg_draft_guide(mode = "mock")`.
+
+## CDISC Pilot External Fixture
+
+CDISC Pilot content is optional and external; it is not bundled in
+`inst/extdata/`. To use it locally, clone the upstream project under the default
+external fixture path:
+
+```bash
+git clone https://github.com/cdisc-org/sdtm-adam-pilot-project .harness/external/cdisc-pilot
+Rscript scripts/run_harness.R --project .harness/rg-cdisc-pilot --external-example cdisc-pilot --llm-mode mock
+```
+
+The harness records the upstream URL, optional commit SHA when available,
+attribution, disclaimer source, and local file hashes in the project work area.
+If the source lives somewhere else, pass `--external-source PATH`.
+Only `define.xml` metadata files are copied into the harness project. CDISC
+Pilot datasets and PDFs remain external and should not be committed.
 
 ## Expected Input Layout
 
@@ -204,7 +246,7 @@ studies/ABC-001/
 See `harness/README.md` for the full directory contract and CLI options.
 
 See `docs/release-checklist.md` for the local release checks and
-`docs/post-mvp-roadmap.md` for the deferred ellmer, ragnar, iADRG/icSDRG,
+`docs/post-mvp-roadmap.md` for real ellmer provider, ragnar, iADRG/icSDRG,
 GraphRAG, Tauri, and shinylive direction. See `docs/github-publish.md` before
 publishing the repository to GitHub.
 
@@ -298,8 +340,9 @@ opening the CSV first.
 Human review is required. The generated documents are drafts and are not
 submission-ready reviewer guides.
 
-Subject-level data is not sent to LLM paths. XPT and dataset-like files are
-excluded from LLM and RAG eligibility by the source scanner.
+Subject-level data is not sent to LLM paths. XPT and dataset-like files,
+including ADaM/SDTM-like CSV/XLSX files, are excluded from LLM and RAG
+eligibility by the source scanner.
 
 GraphRAG, iADRG/icSDRG, Quarto multi-output publishing, Tauri, shinylive
 production packaging, and PDF conversion are future work. Stable stubs are

@@ -140,6 +140,41 @@ rg_validation_columns <- function() {
   )
 }
 
+rg_manifest_columns <- function() {
+  c(
+    "doc_id", "study_id", "file_path", "file_name", "file_ext",
+    "source_type", "data_class", "guide_scope", "file_hash",
+    "modified_time", "include_in_llm", "include_in_rag", "status", "notes",
+    "external_origin", "upstream_url", "upstream_commit", "attribution",
+    "disclaimer_source"
+  )
+}
+
+rg_empty_manifest <- function() {
+  manifest <- tibble::tibble(
+    doc_id = character(),
+    study_id = character(),
+    file_path = character(),
+    file_name = character(),
+    file_ext = character(),
+    source_type = character(),
+    data_class = character(),
+    guide_scope = character(),
+    file_hash = character(),
+    modified_time = character(),
+    include_in_llm = logical(),
+    include_in_rag = logical(),
+    status = character(),
+    notes = character(),
+    external_origin = character(),
+    upstream_url = character(),
+    upstream_commit = character(),
+    attribution = character(),
+    disclaimer_source = character()
+  )
+  dplyr::select(manifest, dplyr::all_of(rg_manifest_columns()))
+}
+
 rg_qc_summary_columns <- function() {
   c(
     "guide_type", "summary_status", "total_rows", "pass_rows", "fail_rows",
