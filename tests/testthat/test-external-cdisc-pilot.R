@@ -3,6 +3,11 @@ test_that("rg_prepare_external_example copies metadata and writes attribution si
   rg_init_project(proj, study_id = "TEST-001")
   source <- make_fake_cdisc_pilot(file.path(dirname(proj), "external", "cdisc-pilot"))
   expected_source <- as.character(rg_norm_path(source))
+  expected_adam_source <- as.character(rg_norm_path(file.path(
+    source,
+    "updated-pilot-submission-package", "900172", "m5", "datasets",
+    "cdiscpilot01", "analysis", "adam", "datasets", "define.xml"
+  )))
 
   result <- rg_prepare_external_example(proj, upstream_commit = "abc123")
 
@@ -27,6 +32,9 @@ test_that("rg_prepare_external_example copies metadata and writes attribution si
   )
   expect_equal(nrow(sidecar$copied_files), 2)
   expect_setequal(sidecar$copied_files$data_class, c("sdtm", "adam"))
+  expect_true(file.exists(expected_adam_source))
+  adam_copied <- sidecar$copied_files[sidecar$copied_files$data_class == "adam", ]
+  expect_equal(adam_copied$source_path, expected_adam_source)
   expect_setequal(
     normalizePath(sidecar$copied_files$project_path, mustWork = TRUE),
     normalizePath(

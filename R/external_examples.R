@@ -20,7 +20,7 @@ rg_cdisc_pilot_spec <- function() {
         ),
         fs::path(
           "updated-pilot-submission-package", "900172", "m5", "datasets",
-          "cdiscpilot01", "analysis", "adam", "define.xml"
+          "cdiscpilot01", "analysis", "adam", "datasets", "define.xml"
         )
       )
     )

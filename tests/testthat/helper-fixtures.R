@@ -66,7 +66,7 @@ make_fake_cdisc_pilot <- function(source_path = tempfile("fake-cdisc-pilot-")) {
   adam_dir <- file.path(
     source_path,
     "updated-pilot-submission-package", "900172", "m5", "datasets",
-    "cdiscpilot01", "analysis", "adam"
+    "cdiscpilot01", "analysis", "adam", "datasets"
   )
 
   dir.create(sdtm_dir, recursive = TRUE, showWarnings = FALSE)
