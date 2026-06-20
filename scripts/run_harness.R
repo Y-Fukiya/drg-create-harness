@@ -38,11 +38,14 @@ usage <- function() {
     "  --project PATH             Harness project directory.",
     "  --study-id ID              Study id used when initializing a project.",
     "  --guide both|adrg|csdrg    Guides to generate. Default: both.",
-    "  --mode dry_run             Drafting mode. Default: dry_run.",
+    "  --mode dry_run|mock|ellmer Legacy drafting mode. Default: dry_run.",
+    "  --llm-mode dry_run|mock|ellmer Drafting mode override. Defaults to --mode.",
     "  --qc-level basic|strict    QC level. Default: basic.",
     "  --init                     Initialize the project if needed.",
     "  --no-run                   Initialize/copy inputs only; skip generation.",
     "  --copy-example NAME        Copy bundled inputs: synthetic, anonymous, or none.",
+    "  --external-example cdisc-pilot|none Prepare optional external fixture. Default: none.",
+    "  --external-source PATH     Optional local external fixture source path.",
     "  --interactive             Prompt for common harness options.",
     "  --summary PATH             Summary JSON path. Default: output/harness_summary.json.",
     "  --fail-on-qc               Exit with status 2 when any QC row fails.",
@@ -222,8 +225,16 @@ run_harness <- function(args = commandArgs(trailingOnly = TRUE)) {
     copy_example <- prompt_value("Copy bundled example", default = copy_example, choices = c("none", "synthetic", "anonymous"))
   }
   guides <- guide_types(guide)
-  mode <- arg_value(args, "--mode", "dry_run")
+  legacy_mode <- arg_value(args, "--mode", "dry_run")
+  mode <- arg_value(args, "--llm-mode", legacy_mode)
   qc_level <- arg_value(args, "--qc-level", "basic")
+  external_example <- arg_value(args, "--external-example", "none")
+  external_source <- arg_value(args, "--external-source", NULL)
+  if (!is.null(external_source) && nzchar(external_source)) {
+    external_source <- normalize_cli_path(external_source)
+  } else {
+    external_source <- NULL
+  }
   summary_path <- arg_value(args, "--summary", file.path(project_path, "output", "harness_summary.json"))
   summary_path <- normalize_cli_path(summary_path)
   should_init <- has_flag(args, "--init") || !file.exists(file.path(project_path, "config.yml"))
@@ -234,17 +245,23 @@ run_harness <- function(args = commandArgs(trailingOnly = TRUE)) {
     fail_on_qc <- prompt_yes_no("Fail on QC findings", default = fail_on_qc)
   }
 
-  if (!mode %in% c("dry_run", "ellmer")) {
-    stop("--mode must be one of: dry_run, ellmer", call. = FALSE)
+  if (!mode %in% c("dry_run", "mock", "ellmer")) {
+    stop("--llm-mode/--mode must be one of: dry_run, mock, ellmer", call. = FALSE)
   }
   if (!qc_level %in% c("basic", "strict")) {
     stop("--qc-level must be one of: basic, strict", call. = FALSE)
+  }
+  if (!external_example %in% c("none", "cdisc-pilot")) {
+    stop("--external-example must be one of: cdisc-pilot, none", call. = FALSE)
   }
 
   if (isTRUE(should_init)) {
     rg_init_project(project_path, study_id = study_id, guide_types = guides, overwrite = FALSE)
   }
   copy_fixture(copy_example, project_path, root)
+  if (identical(external_example, "cdisc-pilot")) {
+    rg_prepare_external_example(project_path, example = "cdisc-pilot", source_path = external_source)
+  }
 
   summary <- list(
     project_path = project_path,
@@ -253,6 +270,9 @@ run_harness <- function(args = commandArgs(trailingOnly = TRUE)) {
     initialized = should_init,
     copied_example = copy_example,
     mode = mode,
+    llm_mode = mode,
+    external_example = external_example,
+    external_source = external_source,
     status = if (isTRUE(no_run)) "initialized" else "running",
     outputs = list()
   )
