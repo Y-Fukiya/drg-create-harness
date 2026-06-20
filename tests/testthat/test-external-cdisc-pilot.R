@@ -116,31 +116,11 @@ test_that("rg_prepare_external_example does not copy XPT or PDF files into proje
 })
 
 test_that("rg_prepare_external_example detects commits only for fixture git repos", {
+  skip_if(Sys.which("git") == "", "git is required to test external fixture commit detection")
+
   proj <- tempfile("rg-project-")
   rg_init_project(proj, study_id = "TEST-001")
   source <- make_fake_cdisc_pilot()
-  fake_commit <- "0123456789abcdef0123456789abcdef01234567"
-  fake_bin <- tempfile("fake-git-bin-")
-  dir.create(fake_bin, recursive = TRUE)
-  if (.Platform$OS.type == "windows") {
-    fake_git <- file.path(fake_bin, "git.bat")
-    writeLines(c(
-      "@echo off",
-      paste0("echo ", fake_commit),
-      "exit /b 0"
-    ), fake_git)
-  } else {
-    fake_git <- file.path(fake_bin, "git")
-    writeLines(c(
-      "#!/bin/sh",
-      paste0("printf '%s\\n' '", fake_commit, "'"),
-      "exit 0"
-    ), fake_git)
-    Sys.chmod(fake_git, mode = "0755")
-  }
-  old_path <- Sys.getenv("PATH")
-  on.exit(Sys.setenv(PATH = old_path), add = TRUE)
-  Sys.setenv(PATH = paste(fake_bin, old_path, sep = .Platform$path.sep))
 
   result <- rg_prepare_external_example(proj, source_path = source)
 
@@ -148,8 +128,21 @@ test_that("rg_prepare_external_example detects commits only for fixture git repo
 
   git_proj <- tempfile("rg-project-")
   rg_init_project(git_proj, study_id = "TEST-001")
-  dir.create(file.path(source, ".git"))
+  git <- unname(Sys.which("git"))
+  run_git <- function(args) {
+    out <- system2(git, c("-C", source, args), stdout = TRUE, stderr = TRUE)
+    status <- attr(out, "status") %||% 0L
+    expect_identical(as.integer(status), 0L)
+    out
+  }
+  run_git("init")
+  run_git(c("config", "user.email", "reviewerguideR-tests@example.invalid"))
+  run_git(c("config", "user.name", "reviewerguideR tests"))
+  run_git(c("add", "."))
+  run_git(c("commit", "-m", "fixture"))
+  expected_commit <- run_git(c("rev-parse", "HEAD"))[[1]]
+
   git_result <- rg_prepare_external_example(git_proj, source_path = source)
 
-  expect_equal(git_result$upstream_commit, fake_commit)
+  expect_equal(git_result$upstream_commit, expected_commit)
 })
