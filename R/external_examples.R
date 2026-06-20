@@ -143,20 +143,21 @@ rg_read_external_sources <- function(project_path) {
 rg_external_manifest_annotations <- function(project_path) {
   sidecar <- rg_read_external_sources(project_path)
   columns <- c(
-    "project_path", "external_origin", "upstream_url", "upstream_commit",
-    "attribution", "disclaimer_source"
+    "project_path", "file_hash", "external_origin", "upstream_url",
+    "upstream_commit", "attribution", "disclaimer_source"
   )
   if (is.null(sidecar) || is.null(sidecar$copied_files)) {
     return(rg_empty_tbl(columns))
   }
 
   copied <- tibble::as_tibble(sidecar$copied_files)
-  if (nrow(copied) == 0 || !"project_path" %in% names(copied)) {
+  if (nrow(copied) == 0 || !all(c("project_path", "file_hash") %in% names(copied))) {
     return(rg_empty_tbl(columns))
   }
 
   annotations <- tibble::tibble(
-    project_path = rg_norm_path(copied$project_path),
+    project_path = as.character(rg_norm_path(copied$project_path)),
+    file_hash = as.character(copied$file_hash),
     external_origin = rg_safe_text(sidecar$example),
     upstream_url = rg_safe_text(sidecar$upstream_url),
     upstream_commit = rg_safe_text(sidecar$upstream_commit),
@@ -176,7 +177,13 @@ rg_external_annotation_for_path <- function(path, annotations) {
     return(empty)
   }
 
-  match <- annotations[annotations$project_path == rg_norm_path(path), columns, drop = FALSE]
+  file_hash <- digest::digest(file = path, algo = "sha256")
+  match <- annotations[
+    annotations$project_path == as.character(rg_norm_path(path)) &
+      annotations$file_hash == file_hash,
+    columns,
+    drop = FALSE
+  ]
   if (nrow(match) == 0) {
     return(empty)
   }

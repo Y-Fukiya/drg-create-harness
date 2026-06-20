@@ -73,6 +73,33 @@ test_that("rg_scan_sources annotates external define rows only", {
   expect_true(is.na(local_row$disclaimer_source))
 })
 
+test_that("rg_scan_sources does not annotate copied files after hash drift", {
+  proj <- tempfile("rg-project-")
+  rg_init_project(proj, study_id = "TEST-001")
+  source <- make_fake_cdisc_pilot()
+  rg_prepare_external_example(proj, source_path = source, upstream_commit = "abc123")
+
+  adam_define <- file.path(proj, "source", "analysis", "define.xml")
+  cat("\n<!-- local drift -->\n", file = adam_define, append = TRUE)
+
+  manifest <- rg_scan_sources(proj)
+  adam_row <- manifest[manifest$file_path == as.character(rg_norm_path(adam_define)), ]
+  sdtm_row <- manifest[manifest$file_path == as.character(rg_norm_path(
+    file.path(proj, "source", "tabulation", "define.xml")
+  )), ]
+
+  expect_equal(nrow(adam_row), 1)
+  expect_true(is.na(adam_row$external_origin))
+  expect_true(is.na(adam_row$upstream_url))
+  expect_true(is.na(adam_row$upstream_commit))
+  expect_true(is.na(adam_row$attribution))
+  expect_true(is.na(adam_row$disclaimer_source))
+
+  expect_equal(nrow(sdtm_row), 1)
+  expect_equal(sdtm_row$external_origin, "cdisc-pilot")
+  expect_equal(sdtm_row$upstream_commit, "abc123")
+})
+
 test_that("rg_prepare_external_example does not copy XPT or PDF files into project source", {
   proj <- tempfile("rg-project-")
   rg_init_project(proj, study_id = "TEST-001")
@@ -95,13 +122,22 @@ test_that("rg_prepare_external_example detects commits only for fixture git repo
   fake_commit <- "0123456789abcdef0123456789abcdef01234567"
   fake_bin <- tempfile("fake-git-bin-")
   dir.create(fake_bin, recursive = TRUE)
-  fake_git <- file.path(fake_bin, "git")
-  writeLines(c(
-    "#!/bin/sh",
-    paste0("printf '%s\\n' '", fake_commit, "'"),
-    "exit 0"
-  ), fake_git)
-  Sys.chmod(fake_git, mode = "0755")
+  if (.Platform$OS.type == "windows") {
+    fake_git <- file.path(fake_bin, "git.bat")
+    writeLines(c(
+      "@echo off",
+      paste0("echo ", fake_commit),
+      "exit /b 0"
+    ), fake_git)
+  } else {
+    fake_git <- file.path(fake_bin, "git")
+    writeLines(c(
+      "#!/bin/sh",
+      paste0("printf '%s\\n' '", fake_commit, "'"),
+      "exit 0"
+    ), fake_git)
+    Sys.chmod(fake_git, mode = "0755")
+  }
   old_path <- Sys.getenv("PATH")
   on.exit(Sys.setenv(PATH = old_path), add = TRUE)
   Sys.setenv(PATH = paste(fake_bin, old_path, sep = .Platform$path.sep))
