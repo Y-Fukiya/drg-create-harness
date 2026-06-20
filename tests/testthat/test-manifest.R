@@ -15,6 +15,32 @@ test_that("rg_scan_sources creates manifest and excludes XPT files from LLM/RAG"
   expect_false(xpt$include_in_rag)
 })
 
+test_that("rg_scan_sources excludes ADaM and SDTM CSV/XLSX files from LLM/RAG", {
+  proj <- tempfile("rg-project-")
+  rg_init_project(proj, study_id = "TEST-001")
+  fs::dir_create(file.path(proj, "source", "analysis"))
+  fs::dir_create(file.path(proj, "source", "tabulation"))
+  fs::dir_create(file.path(proj, "source", "analysis", "validation"))
+  utils::write.csv(data.frame(USUBJID = "01", SAFFL = "Y"), file.path(proj, "source", "analysis", "adsl.csv"), row.names = FALSE)
+  writeBin(as.raw(c(0x50, 0x4b, 0x03, 0x04)), file.path(proj, "source", "tabulation", "dm.xlsx"))
+  utils::write.csv(
+    data.frame(`Rule ID` = "R1", Dataset = "ADSL", Message = "m", check.names = FALSE),
+    file.path(proj, "source", "analysis", "validation", "adam_validation.csv"),
+    row.names = FALSE
+  )
+
+  manifest <- rg_scan_sources(proj)
+  by_name <- split(manifest, manifest$file_name)
+
+  expect_false(by_name[["adsl.csv"]]$include_in_llm)
+  expect_false(by_name[["adsl.csv"]]$include_in_rag)
+  expect_equal(by_name[["adsl.csv"]]$notes, "Excluded from LLM/RAG paths by policy.")
+  expect_false(by_name[["dm.xlsx"]]$include_in_llm)
+  expect_false(by_name[["dm.xlsx"]]$include_in_rag)
+  expect_true(by_name[["adam_validation.csv"]]$include_in_llm)
+  expect_true(by_name[["adam_validation.csv"]]$include_in_rag)
+})
+
 test_that("rg_scan_sources infers common source types", {
   proj <- tempfile("rg-project-")
   rg_init_project(proj, study_id = "TEST-001")

@@ -55,6 +55,11 @@ test_that("rg_collect_llm_context refuses dataset-like files marked for LLM use"
   copy_synthetic_sources(proj)
   dir.create(file.path(proj, "source", "analysis"), recursive = TRUE, showWarnings = FALSE)
   writeLines("dataset records stay out of LLM context", file.path(proj, "source", "analysis", "adsl.xpt"))
+  utils::write.csv(
+    data.frame(USUBJID = "01", SAFFL = "Y"),
+    file.path(proj, "source", "analysis", "adsl.csv"),
+    row.names = FALSE
+  )
   rg_scan_sources(proj)
 
   manifest_path <- file.path(proj, "work", "manifest.json")
@@ -62,6 +67,17 @@ test_that("rg_collect_llm_context refuses dataset-like files marked for LLM use"
   manifest$include_in_llm[manifest$file_name == "adsl.xpt"] <- TRUE
   jsonlite::write_json(manifest, manifest_path, dataframe = "rows", pretty = TRUE, auto_unbox = TRUE, na = "null")
   rg_extract_metadata(proj)
+
+  expect_error(
+    rg_collect_llm_context(proj, guide_type = "adrg", section_id = "adam_dataset_inventory"),
+    "Dataset-like files are marked include_in_llm=TRUE",
+    fixed = TRUE
+  )
+
+  manifest <- rg_read_manifest(proj)
+  manifest$include_in_llm[manifest$file_name == "adsl.xpt"] <- FALSE
+  manifest$include_in_llm[manifest$file_name == "adsl.csv"] <- TRUE
+  jsonlite::write_json(manifest, manifest_path, dataframe = "rows", pretty = TRUE, auto_unbox = TRUE, na = "null")
 
   expect_error(
     rg_collect_llm_context(proj, guide_type = "adrg", section_id = "adam_dataset_inventory"),

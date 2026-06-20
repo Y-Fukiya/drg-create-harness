@@ -48,9 +48,7 @@ rg_collect_llm_context <- function(project_path, guide_type = c("adrg", "csdrg")
   if (nrow(manifest) == 0) {
     stop("Manifest is required before collecting LLM context. Run rg_scan_sources() or rg_extract_metadata() first.", call. = FALSE)
   }
-  disallowed <- manifest |>
-    dplyr::filter(.data$source_type == "dataset" | tolower(.data$file_ext) %in% c("xpt", "sas7bdat", "parquet", "rds")) |>
-    dplyr::filter(rg_llm_truthy(.data$include_in_llm))
+  disallowed <- manifest[rg_manifest_dataset_like(manifest) & rg_llm_truthy(manifest$include_in_llm), , drop = FALSE]
   if (nrow(disallowed) > 0) {
     stop("Dataset-like files are marked include_in_llm=TRUE. Refusing to build LLM context.", call. = FALSE)
   }

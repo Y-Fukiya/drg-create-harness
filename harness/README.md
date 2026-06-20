@@ -128,8 +128,9 @@ Rscript scripts/run_harness.R --project .harness/rg-demo --copy-example anonymou
 ```
 
 The mock context is built from extracted `define.xml` metadata and validation
-findings only. XPT contents and dataset records are excluded. Generated DOCX
-files remain drafts that require human review.
+findings only. XPT contents and ADaM/SDTM-like dataset files, including
+CSV/XLSX files under analysis or tabulation data paths, are excluded. Generated
+DOCX files remain drafts that require human review.
 
 ## Run The CDISC Pilot External Fixture
 

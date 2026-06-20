@@ -16,8 +16,8 @@ scope.
 - Current next step: validate deterministic mock structured output before any
   real provider workflow.
 - Keep tests free of external provider calls and API keys.
-- Context sent to LLMs must remain metadata-only. XPT files and dataset records
-  stay excluded from LLM paths.
+- Context sent to LLMs must remain metadata-only. XPT files, ADaM/SDTM-like
+  CSV/XLSX files, and dataset records stay excluded from LLM paths.
 - Add real provider support only after mock output validation is stable.
 
 ## CDISC Pilot External Fixture
@@ -34,7 +34,7 @@ scope.
 - Add local mock retrieval and fixture-based tests before enabling real indexes.
 - Do not call embedding APIs in automated tests.
 - RAG inputs should use manifest eligibility flags and exclude subject-level
-  datasets.
+  datasets, including ADaM/SDTM-like CSV/XLSX files.
 
 ## iADRG and icSDRG
 

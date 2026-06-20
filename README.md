@@ -149,7 +149,8 @@ Rscript scripts/run_harness.R --project .harness/rg-demo --copy-example anonymou
 ```
 
 Mock drafting uses metadata-only context from `define.xml` extraction and
-validation findings. XPT contents and dataset records are excluded from LLM
+validation findings. XPT contents and ADaM/SDTM-like dataset files, including
+CSV/XLSX files under analysis or tabulation data paths, are excluded from LLM
 context. The generated DOCX files remain drafts and require human review before
 any submission use.
 
@@ -339,8 +340,9 @@ opening the CSV first.
 Human review is required. The generated documents are drafts and are not
 submission-ready reviewer guides.
 
-Subject-level data is not sent to LLM paths. XPT and dataset-like files are
-excluded from LLM and RAG eligibility by the source scanner.
+Subject-level data is not sent to LLM paths. XPT and dataset-like files,
+including ADaM/SDTM-like CSV/XLSX files, are excluded from LLM and RAG
+eligibility by the source scanner.
 
 GraphRAG, iADRG/icSDRG, Quarto multi-output publishing, Tauri, shinylive
 production packaging, and PDF conversion are future work. Stable stubs are

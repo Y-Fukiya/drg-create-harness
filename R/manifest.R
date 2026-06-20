@@ -37,6 +37,39 @@ rg_guide_scope <- function(source_type, data_class) {
   "unknown"
 }
 
+rg_is_dataset_like_source <- function(path, source_type, data_class) {
+  ext <- tolower(fs::path_ext(as.character(path %||% "")))
+  source_type <- as.character(source_type %||% "")
+  data_class <- as.character(data_class %||% "")
+
+  if (identical(source_type, "dataset")) {
+    return(TRUE)
+  }
+  if (ext %in% c("xpt", "sas7bdat", "parquet", "rds")) {
+    return(TRUE)
+  }
+  if (!identical(source_type, "validation") && ext %in% c("csv", "xlsx") && data_class %in% c("adam", "sdtm")) {
+    return(TRUE)
+  }
+  FALSE
+}
+
+rg_manifest_dataset_like <- function(manifest) {
+  if (nrow(manifest) == 0) {
+    return(logical())
+  }
+  col_or_na <- function(name) {
+    if (name %in% names(manifest)) manifest[[name]] else rep(NA_character_, nrow(manifest))
+  }
+  mapply(
+    rg_is_dataset_like_source,
+    col_or_na("file_path"),
+    col_or_na("source_type"),
+    col_or_na("data_class"),
+    USE.NAMES = FALSE
+  )
+}
+
 rg_scan_sources <- function(project_path, write = TRUE) {
   project_path <- rg_norm_path(project_path)
   study_id <- rg_project_study_id(project_path)
@@ -55,7 +88,7 @@ rg_scan_sources <- function(project_path, write = TRUE) {
       path <- rg_norm_path(files[[i]])
       source_type <- rg_source_type(path)
       data_class <- rg_infer_data_class(path, "auto")
-      dataset_like <- source_type == "dataset" || tolower(fs::path_ext(path)) %in% c("xpt", "sas7bdat", "parquet", "rds")
+      dataset_like <- rg_is_dataset_like_source(path, source_type, data_class)
       hash <- digest::digest(file = path, algo = "sha256")
       doc_id <- paste0("DOC-", substr(digest::digest(path, algo = "xxhash64"), 1, 12))
       external <- rg_external_annotation_for_path(path, external_annotations)
