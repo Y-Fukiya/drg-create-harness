@@ -118,6 +118,52 @@ Windows PowerShell:
 .\scripts\run_harness.ps1 -Project .\.harness\rg-harness-demo -CopyExample anonymous
 ```
 
+## Run Mock LLM Drafting
+
+Mock mode produces deterministic structured draft sections without API keys or
+external provider calls:
+
+```bash
+Rscript scripts/run_harness.R --project .harness/rg-demo --copy-example anonymous --llm-mode mock
+```
+
+The mock context is built from extracted `define.xml` metadata and validation
+findings only. XPT contents and dataset records are excluded. Generated DOCX
+files remain drafts that require human review.
+
+## Run The CDISC Pilot External Fixture
+
+CDISC Pilot data are not bundled in `inst/extdata/`. Clone or download the
+upstream project locally, then opt in to the external fixture.
+
+macOS/Linux:
+
+```bash
+git clone https://github.com/cdisc-org/sdtm-adam-pilot-project .harness/external/cdisc-pilot
+Rscript scripts/run_harness.R --project .harness/rg-cdisc-pilot --external-example cdisc-pilot --llm-mode mock
+```
+
+Windows PowerShell:
+
+```powershell
+git clone https://github.com/cdisc-org/sdtm-adam-pilot-project .\.harness\external\cdisc-pilot
+.\scripts\run_harness.ps1 -Project .\.harness\rg-cdisc-pilot -ExternalExample cdisc-pilot -LlmMode mock
+```
+
+If the external source is not under the default `.harness/external/cdisc-pilot`
+path, pass it explicitly:
+
+```bash
+Rscript scripts/run_harness.R --project .harness/rg-cdisc-pilot --external-example cdisc-pilot --external-source PATH --llm-mode mock
+```
+
+```powershell
+.\scripts\run_harness.ps1 -Project .\.harness\rg-cdisc-pilot -ExternalExample cdisc-pilot -ExternalSource PATH -LlmMode mock
+```
+
+The project work area records the upstream URL, optional commit SHA when
+available, attribution, disclaimer source, and local file hashes.
+
 ## Direct CLI
 
 ```bash
@@ -144,6 +190,9 @@ Useful options:
 - `--init`: initialize the project if needed.
 - `--no-run`: initialize/copy inputs and stop before generation.
 - `--copy-example synthetic|anonymous`: populate `source/` from bundled fixtures.
+- `--llm-mode dry_run|mock|ellmer`: choose the drafting mode.
+- `--external-example cdisc-pilot`: prepare an optional local external fixture.
+- `--external-source PATH`: use a non-default external fixture source path.
 - `--interactive`: prompt for common project, guide, example, and run options.
 - `--fail-on-qc`: return exit code 2 when any QC row fails.
 - `--summary PATH`: write summary JSON somewhere other than `output/harness_summary.json`.
@@ -204,5 +253,5 @@ should fail on any QC issue.
   items.
 - External codelist dictionary/version attributes and Origin detail text are
   extracted when present.
-- ellmer, ragnar, iADRG/icSDRG, and GraphRAG remain next-phase integration
-  points.
+- Real ellmer providers, ragnar, iADRG/icSDRG, and GraphRAG remain next-phase
+  integration points.

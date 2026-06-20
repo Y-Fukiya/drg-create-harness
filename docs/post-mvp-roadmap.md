@@ -13,10 +13,20 @@ scope.
 ## ellmer
 
 - Keep `ellmer` in `Suggests`.
+- Current next step: validate deterministic mock structured output before any
+  real provider workflow.
 - Keep tests free of external provider calls and API keys.
-- Add mock-driven structured output tests before any real provider workflow.
 - Context sent to LLMs must remain metadata-only. XPT files and dataset records
   stay excluded from LLM paths.
+- Add real provider support only after mock output validation is stable.
+
+## CDISC Pilot External Fixture
+
+- Treat CDISC Pilot as an optional local external fixture.
+- Do not bundle CDISC Pilot files or generated subsets in `inst/extdata/`.
+- Record the upstream URL, commit SHA when available, attribution, disclaimer
+  source, and local file hashes in the project work area.
+- CI must not require downloading CDISC content.
 
 ## ragnar
 

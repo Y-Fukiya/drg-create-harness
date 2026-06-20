@@ -132,6 +132,38 @@ scripts\run_harness.cmd --project .harness\rg-demo --copy-example anonymous
 scripts\run_harness.cmd --project studies\ABC-001 --study-id ABC-001 --guide both
 ```
 
+## Mock LLM Drafting
+
+Use deterministic mock drafting when you want LLM-shaped guide sections without
+API keys or provider calls:
+
+```bash
+Rscript scripts/run_harness.R --project .harness/rg-demo --copy-example anonymous --llm-mode mock
+```
+
+Mock drafting uses metadata-only context from `define.xml` extraction and
+validation findings. XPT contents and dataset records are excluded from LLM
+context. The generated DOCX files remain drafts and require human review before
+any submission use.
+
+At the R engine level, the same mode is available with
+`rg_draft_guide(mode = "mock")`.
+
+## CDISC Pilot External Fixture
+
+CDISC Pilot content is optional and external; it is not bundled in
+`inst/extdata/`. To use it locally, clone the upstream project under the default
+external fixture path:
+
+```bash
+git clone https://github.com/cdisc-org/sdtm-adam-pilot-project .harness/external/cdisc-pilot
+Rscript scripts/run_harness.R --project .harness/rg-cdisc-pilot --external-example cdisc-pilot --llm-mode mock
+```
+
+The harness records the upstream URL, optional commit SHA when available,
+attribution, disclaimer source, and local file hashes in the project work area.
+If the source lives somewhere else, pass `--external-source PATH`.
+
 ## Expected Input Layout
 
 For both macOS and Windows, a study project should look like this:
@@ -204,7 +236,7 @@ studies/ABC-001/
 See `harness/README.md` for the full directory contract and CLI options.
 
 See `docs/release-checklist.md` for the local release checks and
-`docs/post-mvp-roadmap.md` for the deferred ellmer, ragnar, iADRG/icSDRG,
+`docs/post-mvp-roadmap.md` for real ellmer provider, ragnar, iADRG/icSDRG,
 GraphRAG, Tauri, and shinylive direction. See `docs/github-publish.md` before
 publishing the repository to GitHub.
 
